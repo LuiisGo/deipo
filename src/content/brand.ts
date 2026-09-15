@@ -8,9 +8,9 @@ export const brand = {
 export const campaign = {
   reveal: ['SLOWLY ROASTED.', 'GONE QUICKLY.'],
   productHeading: ['A SUNDAY FEELING.', 'ON A SATURDAY.'],
-  productBody: 'Hay comidas para las que vale la pena hacer tiempo. Cocción lenta, sabor profundo y una muy buena razón para quedarte a la mesa.',
+  productBody: 'Cocción lenta. Sabor profundo. Una buena razón para quedarte a la mesa.',
   packagingHeading: ['GOOD THINGS.', 'INSIDE.'],
-  packagingBody: 'Una caja negra mate. Un sello naranja. Cada detalle pensado, incluso antes del primer bocado.',
+  packagingBody: 'Negro mate. Un sello naranja. El ritual empieza antes del primer bocado.',
   craft: ['CHEF CREATED.', 'SMALL BATCH.', 'BUILT FOR THE DROP.'],
-  craftBody: 'Tiempo. Temperatura. Textura. Sin prisas. Nada en el plato sin una razón.',
+  craftBody: 'Tiempo, temperatura y textura. Nada en el plato sin una razón.',
 };

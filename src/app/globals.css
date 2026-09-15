@@ -12,7 +12,7 @@
   --muted: #655f57; --muted-dark: #b6b1a9;
   --line: #12121235; --line-dark: #f5f1e836;
   --gutter: clamp(20px, 4.3vw, 80px); --column-gap: clamp(24px, 4vw, 72px);
-  --space-section: clamp(80px, 9vw, 150px); --space-small: 8px;
+  --space-section: clamp(64px, 7.5vw, 120px); --space-small: 8px;
   --space-medium: 24px; --space-large: 48px; --max-width: 1800px;
   --duration: 650ms; --ease: cubic-bezier(.22,1,.36,1);
   --z-nav: 20; --z-stock: 30; --z-focus: 50;
@@ -39,12 +39,15 @@ h2 { font-size: clamp(40px, 5.5vw, 82px); }
 .wordmark { display: inline-block; font-family: var(--font-sans); font-weight: 600; font-size: 39px; line-height: 1.12; letter-spacing: -.085em; white-space: nowrap; padding-right: .035em; }
 .brand-dot { color: var(--orange); }
 .wordmark > .brand-dot { display: inline-block; width: .11em; height: .11em; overflow: hidden; border-radius: 50%; background: var(--orange); color: transparent; margin-left: .025em; vertical-align: .01em; }
-.skip-link { position: fixed; transform: translateY(-200%); top: 12px; left: 12px; padding: 15px; background: var(--ink); color: var(--cream); z-index: var(--z-focus); }
-.skip-link:focus { transform: translateY(0); }
+.skip-link { position: fixed; top: 12px; left: 12px; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; background: var(--ink); color: var(--cream); z-index: var(--z-focus); }
+.skip-link:focus-visible { width: auto; height: auto; padding: 15px; overflow: visible; clip-path: none; }
+.arrow-icon { display: inline-block; width: 1em; height: 1em; flex-shrink: 0; vertical-align: middle; }
+.button > .arrow-icon { width: 24px; height: 24px; }
+.text-button { gap: 8px; }
 .short-rule { display: block; width: 45px; height: 1px; background: currentColor; }
 .demo-banner { padding: 9px var(--gutter); background: var(--ink); color: var(--cream); text-align: center; font-size: 9px; letter-spacing: .09em; line-height: 1.6; }
 .demo-banner span { padding-inline: 8px; }
-.navigation { min-height: 90px; position: sticky; top: 0; z-index: var(--z-nav); background: var(--cream); display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); }
+.navigation { min-height: 84px; position: sticky; top: 0; z-index: var(--z-nav); background: var(--cream); display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); }
 .navigation nav { display: flex; gap: 30px; margin-left: auto; margin-right: 60px; }
 .navigation nav a, .checkout-nav > a:not(:first-child) { font-size: 10px; font-weight: 600; letter-spacing: .12em; padding-block: 16px; }
 .navigation a:hover, .footer a:hover, .text-button:hover { color: var(--orange); }
@@ -59,7 +62,7 @@ h2 { font-size: clamp(40px, 5.5vw, 82px); }
 .brand-stage { animation: brand-enter 850ms var(--ease) both; }
 .campaign-title { animation: brand-enter 850ms 120ms var(--ease) both; }
 @keyframes brand-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-.brand-stage { display: grid; grid-template-columns: 8fr 4fr; align-items: center; padding-block: clamp(40px, 5vw, 85px) clamp(35px, 4.4vw, 70px); }
+.brand-stage { display: grid; grid-template-columns: 8fr 4fr; align-items: center; padding-block: clamp(40px, 5vw, 72px) clamp(36px, 4vw, 60px); }
 .hero-wordmark { font-size: clamp(116px, 19.7vw, 340px); line-height: 1.08; margin-left: -.065em; }
 .brand-statement { padding-left: 22%; align-self: center; }
 .brand-statement > .eyebrow { display: block; max-width: 180px; line-height: 1.8; font-size: 10px; margin-bottom: 36px; }
@@ -67,7 +70,7 @@ h2 { font-size: clamp(40px, 5.5vw, 82px); }
 .campaign-title { display: grid; grid-template-columns: minmax(0, 10fr) 2fr; column-gap: 3.5vw; align-items: end; }
 .campaign-eyebrow { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 24px; margin-bottom: 22px; display: flex; justify-content: space-between; }
 .campaign-eyebrow > span:first-child { color: var(--ink); border-left: 2px solid var(--orange); padding-left: 10px; }
-.campaign-title h1 { font-size: clamp(52px, 10.05vw, 176px); white-space: nowrap; line-height: 1.02; letter-spacing: -.025em; }
+.campaign-title h1 { font-size: clamp(52px, 13vw, 212px); white-space: nowrap; line-height: 1.02; letter-spacing: -.025em; }
 .campaign-aside { display: flex; flex-direction: column; gap: 16px; padding-bottom: 5px; font-size: 10px; letter-spacing: .15em; line-height: 1.8; }
 .hero-baseline { display: flex; justify-content: space-between; padding-block: 32px 24px; font-size: 9px; }
 .hero-baseline a { display: flex; align-items: center; gap: 18px; }
@@ -78,9 +81,9 @@ h2 { font-size: clamp(40px, 5.5vw, 82px); }
 .hero-food { height: clamp(400px, 57vw, 860px); }
 .hero-food img { object-position: center 52%; }
 .photo-footnote { padding-block: 20px; display: flex; justify-content: space-between; color: var(--muted-dark); font-size: 9px; }
-.reveal-statement { display: grid; grid-template-columns: 8fr 4fr; padding-block: clamp(60px, 9vw, 150px); gap: 26px var(--column-gap); }
+.reveal-statement { display: grid; grid-template-columns: 8fr 4fr; padding-block: clamp(55px, 6.5vw, 105px); gap: 26px var(--column-gap); }
 .reveal-statement > .eyebrow { grid-column: 1 / -1; color: var(--muted-dark); }
-.reveal-statement h2 { font-size: clamp(50px, 7.25vw, 112px); }
+.reveal-statement h2 { font-size: clamp(50px, 6.6vw, 100px); }
 .reveal-statement .body-copy { align-self: end; padding-bottom: 5px; font-size: 14px; color: var(--muted-dark); }
 .drop-section { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(45px, 9vw, 150px); padding-block: var(--space-section); }
 .drop-intro > .eyebrow { margin-bottom: 28px; }
@@ -131,13 +134,13 @@ input[type=checkbox], input[type=radio] { accent-color: var(--orange); width: 18
 .packaging-copy .body-copy { max-width: 310px; font-size: 14px; }
 .packaging-note { display: flex; align-items: center; gap: 25px; margin-block: 44px; }
 .seal-mark { width: 17px; height: 56px; background: var(--orange); }
-.packaging-visual { position: relative; overflow: hidden; }
-.box-image { aspect-ratio: 4/4.7; background: var(--cream); }
+.packaging-visual { position: relative; min-width: 0; }
+.box-image { aspect-ratio: 1/1.05; background: var(--cream); }
 .box-image img { object-fit: cover; }
 .packaging-caption { display: block; padding-top: 20px; text-align: right; font-size: 9px; }
 .craft-section { padding-block: var(--space-section); background: var(--ink); color: var(--cream); display: grid; grid-template-columns: 8fr 4fr; gap: 45px var(--column-gap); }
 .craft-section > .eyebrow { grid-column: 1 / -1; color: var(--muted-dark); }
-.craft-section h2 { font-size: clamp(55px, 8vw, 124px); }
+.craft-section h2 { font-size: clamp(55px, 6.8vw, 106px); }
 .craft-section h2 > span { display: block; }
 .craft-note { align-self: end; display: flex; flex-direction: column; gap: 35px; padding-bottom: 5px; }
 .craft-note .body-copy { font-size: 14px; color: var(--muted-dark); }
@@ -187,9 +190,9 @@ input::placeholder { color: #777069; opacity: 1; }
 
 /* Checkout: the same editorial system, with native accessible controls. */
 .checkout-nav { display: flex; justify-content: space-between; gap: 25px; align-items: center; min-height: 105px; border-bottom: 1px solid var(--line); }
-.checkout-main { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(50px, 10vw, 180px); padding-block: 70px 120px; }
+.checkout-main { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(50px, 10vw, 180px); padding-block: 55px 90px; }
 .checkout-form-column > h1 { font-size: clamp(64px, 7vw, 108px); margin-top: 24px; }
-.checkout-steps { list-style: none; display: flex; justify-content: space-between; margin: 50px 0 40px; padding: 0; border-bottom: 1px solid var(--line); }
+.checkout-steps { list-style: none; display: flex; justify-content: space-between; margin: 40px 0 32px; padding: 0; border-bottom: 1px solid var(--line); }
 .checkout-steps li { flex: 1; }
 .checkout-steps button { width: 100%; text-align: left; background: none; border: 0; padding: 10px 0 20px; display: flex; flex-direction: column; gap: 8px; font-size: 11px; }
 .checkout-steps button span { font-size: 10px; letter-spacing: .1em; }
@@ -248,12 +251,12 @@ input::placeholder { color: #777069; opacity: 1; }
 .receipt-scene, .receipt-empty { background: var(--ink); color: var(--cream); min-height: 100svh; padding: 55px 20px 65px; }
 .receipt-status { text-align: center; font-size: 9px; color: var(--muted-dark); margin-bottom: 55px; }
 .receipt-status > span { color: var(--orange); margin-inline: 12px; }
-.printer { width: min(100%, 470px); margin-inline: auto; position: relative; padding-inline: 15px; }
+.printer { width: min(100%, 430px); margin-inline: auto; position: relative; padding-inline: 15px; }
 .printer-edge { position: relative; z-index: 2; background: #1c1c1c; height: 33px; margin-inline: -15px; border-top: 1px solid #333; border-bottom: 8px solid #080808; display: flex; align-items: center; justify-content: space-between; padding-inline: 20px; }
 .printer-edge > span { font-size: 7px; letter-spacing: .16em; color: #a39d93; }
 .printer-edge i { width: 3px; height: 3px; background: var(--orange); }
 .paper-feed { overflow: hidden; padding-bottom: 10px; }
-.receipt-paper { position: relative; color: var(--ink); background: var(--cream); padding: 48px 34px 36px; font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: .06em; animation: print-feed 3s var(--ease) both; }
+.receipt-paper { position: relative; color: var(--ink); background: var(--cream); padding: 40px 30px 32px; font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: .06em; animation: print-feed 3s var(--ease) both; }
 .receipt-paper::after { position: absolute; content: ''; bottom: -7px; left: 0; width: 100%; height: 8px; background: var(--cream); clip-path: polygon(0 0,100% 0,100% 35%,98% 100%,96% 35%,94% 100%,92% 35%,90% 100%,88% 35%,86% 100%,84% 35%,82% 100%,80% 35%,78% 100%,76% 35%,74% 100%,72% 35%,70% 100%,68% 35%,66% 100%,64% 35%,62% 100%,60% 35%,58% 100%,56% 35%,54% 100%,52% 35%,50% 100%,48% 35%,46% 100%,44% 35%,42% 100%,40% 35%,38% 100%,36% 35%,34% 100%,32% 35%,30% 100%,28% 35%,26% 100%,24% 35%,22% 100%,20% 35%,18% 100%,16% 35%,14% 100%,12% 35%,10% 100%,8% 35%,6% 100%,4% 35%,2% 100%,0 35%); }
 @keyframes print-feed { 0%, 8% { transform: translateY(-101%); } 37% { transform: translateY(-67%); } 39% { transform: translateY(-67%); } 63% { transform: translateY(-34%); } 65% { transform: translateY(-34%); } 89%,100% { transform: translateY(0); } }
 .receipt-heading { text-align: center; padding-bottom: 32px; border-bottom: 1px solid var(--line); }
@@ -296,6 +299,56 @@ input::placeholder { color: #777069; opacity: 1; }
 .legal-page section h2 { font-family: var(--font-sans); font-size: 17px; font-weight: 600; line-height: 1.4; }
 .legal-page section p { margin-top: 18px; font-size: 14px; line-height: 1.8; color: var(--muted); }
 
+
+/* V0.1: original artwork, presentation modes and state-aware editorial pacing. */
+.deipo-logo { display: block; height: auto; object-fit: contain; max-width: 100%; }
+.deipo-logo.logo-navigation, .deipo-logo.logo-compact { width: 104px; }
+.deipo-logo.logo-hero { width: clamp(280px, 47vw, 688px); margin: 0; }
+.deipo-logo.logo-footer { width: 172px; }
+.deipo-logo.logo-receipt { width: 198px; margin-inline: auto; }
+.logo-cream { color: var(--cream); }
+.presentation-notice { min-height: 29px; display: flex; justify-content: center; align-items: center; gap: 12px; padding: 7px 12px; font-size: 8px; letter-spacing: .09em; color: var(--muted); border-bottom: 1px solid var(--line); }
+.stock-indicator { min-width: 165px; }
+.stock-count { white-space: nowrap; }
+.stock-inline { min-height: 44px; }
+.stock-inline .stock-state { grid-column: 2; grid-row: 1; }
+.stock-inline .stock-count { grid-column: 1; }
+.stock-state { white-space: nowrap; }
+.is-sold-out .campaign-title h1 { font-size: clamp(90px, 16vw, 250px); }
+.is-closed .campaign-title h1, .is-upcoming .campaign-title h1 { font-size: clamp(65px, 10vw, 155px); }
+.waitlist-prominent { border-top: 1px solid var(--line); padding-block: clamp(40px, 5vw, 75px); }
+.waitlist-prominent h2 { font-size: clamp(44px, 5vw, 74px); }
+.waitlist-prominent .waitlist-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+.waitlist-prominent .waitlist-form > label:first-child, .waitlist-prominent .waitlist-form > .button, .waitlist-prominent .waitlist-form > p { grid-column: 1 / -1; }
+.waitlist-prominent .waitlist-form .button { margin-top: 5px; }
+.waitlist-safeguard { margin-top: 14px; max-width: 380px; }
+.archive-note { border-top: 2px solid var(--ink); padding-top: 24px; align-self: start; }
+.archive-number { font-family: var(--font-display); font-size: clamp(44px, 5.7vw, 88px); line-height: 1.15; margin-block: 35px 20px; font-variant-numeric: tabular-nums; }
+.archive-number > span { color: var(--muted); font-size: .6em; }
+.archive-note > .body-copy { font-size: 14px; max-width: 310px; margin-block: 35px 18px; }
+.next-chapter { color: var(--cream); background: var(--ink); padding-block: 65px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; border-top: 1px solid var(--line-dark); }
+.next-chapter > .eyebrow { grid-column: 1 / -1; color: var(--muted-dark); }
+.next-chapter h2 { font-size: clamp(75px, 10vw, 154px); }
+.next-chapter > div { align-self: end; max-width: 390px; justify-self: end; width: 100%; }
+.next-chapter .body-copy { margin-bottom: 30px; font-size: 14px; color: var(--muted-dark); }
+.next-chapter .button { background: transparent; border-color: var(--line-dark); }
+.next-chapter .button:hover { background: var(--orange); border-color: var(--orange); }
+.packaging-mask { overflow: hidden; background: var(--cream); }
+.packaging-frame-heading { display: flex; justify-content: space-between; padding-block: 16px; border-top: 1px solid var(--line); font-size: 9px; }
+.packaging-details { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-top: 1px solid var(--line); gap: 6px; }
+.packaging-details button { min-width: 0; background: none; border: none; border-top: 2px solid transparent; margin-top: -1px; min-height: 58px; padding: 10px 2px; font-size: 8px; letter-spacing: .08em; line-height: 1.7; text-align: left; }
+.packaging-details button > span { display: block; color: var(--muted); font-size: 9px; }
+.packaging-details button[aria-pressed=true] { border-top-color: var(--orange); }
+.packaging-caption-row { display: flex; justify-content: space-between; gap: 20px; padding-top: 15px; }
+.packaging-caption { padding: 0; text-align: left; }
+.packaging-caption-row .text-button { font-size: 8px; padding: 0; align-self: start; }
+.mobile-order-total { display: none; }
+.fulfillment-options > label.selected, .slot-options > label.selected { border-color: var(--ink); background: #12121204; box-shadow: inset 2px 0 var(--orange); }
+.checkout-form > .body-copy { margin-bottom: 28px; }
+.receipt-meta, .receipt-items, .receipt-totals { font-variant-numeric: tabular-nums; }
+.receipt-paper { box-shadow: 0 3px 16px #00000022; }
+.receipt-actions .text-button { font-size: 9px; letter-spacing: .06em; }
+
 @media (min-width: 1801px) {
   .hero-food { max-width: 1800px; margin-inline: auto; }
 }
@@ -303,7 +356,7 @@ input::placeholder { color: #777069; opacity: 1; }
   .navigation nav { margin-right: 20px; }
   .brand-statement { padding-left: 10%; }
   .campaign-title { grid-template-columns: 9fr 2fr; gap: 24px; }
-  .campaign-title h1 { font-size: 9.9vw; }
+  .campaign-title h1 { font-size: 12.4vw; }
   .campaign-aside { font-size: 9px; gap: 10px; }
   .drop-section { gap: 55px; }
   .footer-bottom { grid-template-columns: 1fr 2fr; }
@@ -311,64 +364,97 @@ input::placeholder { color: #777069; opacity: 1; }
   .checkout-main { gap: 45px; }
 }
 @media (max-width: 767px) {
+  .deipo-logo.logo-navigation { width: 88px; }
+  .deipo-logo.logo-hero { width: min(100%, 360px); }
+  .deipo-logo.logo-footer { width: 140px; }
+  .deipo-logo.logo-receipt { width: 180px; }
+  .brand-statement { margin-top: 26px; }
+  .presentation-notice { font-size: 7px; gap: 8px; }
+  .is-sold-out .campaign-title h1 { font-size: 23vw; }
+  .is-closed .campaign-title h1, .is-upcoming .campaign-title h1 { font-size: 14.8vw; }
+  .navigation > .stock-indicator .stock-state { grid-column: 2; grid-row: 1; }
+  .navigation > .stock-indicator .stock-count { grid-column: 1; }
+  [data-stock-status=low_stock] .stock-state { display: grid; grid-template-columns: 5px 1fr; gap: 1px 7px; line-height: 1.3; }
+  [data-stock-status=low_stock] .stock-state i { grid-row: 1; grid-column: 1; align-self: center; }
+  .stock-state .stock-action { grid-row: 1; grid-column: 2; }
+  .stock-state .low-stock-label { grid-row: 2; grid-column: 2; font-size: 7px; }
+  .waitlist-prominent { padding-block: 38px 48px; gap: 28px; }
+  .waitlist-prominent h2 { font-size: 12vw; }
+  .waitlist-prominent .waitlist-form { display: block; }
+  .waitlist-prominent .waitlist-form label { margin-bottom: 18px; }
+  .waitlist-prominent .waitlist-form .button { margin-top: 24px; }
+  .archive-number { font-size: 16vw; margin-block: 25px 15px; }
+  .archive-note > .body-copy { margin-top: 24px; }
+  .next-chapter { grid-template-columns: 1fr; padding-block: 48px; gap: 26px; }
+  .next-chapter h2 { font-size: 22vw; }
+  .next-chapter > div { justify-self: start; max-width: none; }
+  .next-chapter .body-copy { max-width: 265px; }
+  .mobile-order-total { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; margin-top: 25px; padding-block: 16px; border-block: 1px solid var(--line); font-size: 10px; }
+  .mobile-order-total strong { font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .mobile-order-total a { grid-column: 1 / -1; font-size: 8px; letter-spacing: .08em; min-height: 24px; display: flex; align-items: center; }
+  .receipt-status { margin-bottom: 26px; }
+
   html { scroll-padding-top: 90px; }
-  body { padding-bottom: 58px; }
+  /* Netlify injects this optional badge outside the app; reserve its bottom row. */
+  body:has(#nl-badge-frame):has(.navigation) { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+  body:has(#nl-badge-frame) .navigation > .stock-indicator { bottom: 64px; }
+  body:has(.navigation) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
   .demo-banner { font-size: 7px; letter-spacing: .06em; padding-block: 9px; }
   .navigation { min-height: 73px; }
   .navigation .wordmark { font-size: 33px; }
   .navigation nav { margin: 0; gap: 23px; }
   .navigation nav a { font-size: 8px; letter-spacing: .09em; }
-  .navigation > .stock-indicator { position: fixed; z-index: var(--z-stock); bottom: 0; left: 0; width: 100%; background: var(--cream); border-top: 1px solid var(--line); min-height: 58px; padding: 10px var(--gutter) max(10px, env(safe-area-inset-bottom)); grid-template-columns: 1fr auto 18px; gap: 12px; }
+  .navigation > .stock-indicator { position: fixed; z-index: var(--z-stock); bottom: 0; left: 0; width: 100%; background: var(--cream); border-top: 1px solid var(--line); min-height: calc(56px + env(safe-area-inset-bottom)); padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom)); grid-template-columns: 1fr auto 18px; gap: 12px; }
   .navigation > .stock-indicator .stock-count { grid-row: 1; align-self: center; font-size: 10px; }
   .navigation > .stock-indicator .stock-state { font-size: 8px; }
   .navigation > .stock-indicator .stock-arrow { grid-column: 3; grid-row: 1; font-size: 20px; }
-  .brand-stage { grid-template-columns: 1fr; padding-block: 45px 38px; }
+  .brand-stage { grid-template-columns: 1fr; padding-block: 38px 30px; }
   .hero-wordmark { font-size: 34vw; line-height: 1.12; }
   .brand-statement { padding: 0; margin-top: 22px; }
   .brand-statement > .eyebrow { margin: 0; max-width: none; font-size: 8px; letter-spacing: .2em; }
   .brand-statement p { display: none; }
   .campaign-title { grid-template-columns: 1fr; gap: 0; }
   .campaign-eyebrow { padding-top: 18px; margin-bottom: 18px; font-size: 8px; }
-  .campaign-title h1 { font-size: 12.25vw; line-height: 1.08; }
+  .campaign-title h1 { font-size: 17.2vw; line-height: 1.05; }
   .campaign-aside { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 8px; letter-spacing: .12em; }
   .campaign-aside .short-rule { display: none; }
   .campaign-aside p:last-child { text-align: right; }
   .hero-baseline { padding-block: 24px 18px; font-size: 7px; letter-spacing: .08em; gap: 12px; }
   .hero-baseline a { gap: 8px; white-space: nowrap; }
-  .hero-food { height: 480px; max-height: 120vw; }
+  .hero-food { height: min(108vw, 470px); }
   .hero-food img { object-position: 48% 50%; }
   .photo-footnote { font-size: 7px; gap: 25px; line-height: 1.6; }
   .photo-footnote > span:last-child { text-align: right; max-width: 160px; }
-  .reveal-statement { display: block; padding-block: 70px 80px; }
-  .reveal-statement h2 { font-size: 12.2vw; margin-block: 26px; }
+  .reveal-statement { display: block; padding-block: 48px 56px; }
+  .reveal-statement h2 { font-size: 12.4vw; margin-block: 24px; }
   .reveal-statement .eyebrow { font-size: 8px; }
-  .reveal-statement .body-copy { font-size: 13px; max-width: 290px; margin-left: auto; margin-top: 30px; }
-  .drop-section { grid-template-columns: 1fr; gap: 60px; padding-block: 80px; }
-  .drop-intro h2 { font-size: 10.5vw; }
+  .reveal-statement .body-copy { font-size: 13px; max-width: 270px; margin-left: auto; margin-top: 22px; }
+  .drop-section { grid-template-columns: 1fr; gap: 44px; padding-block: 60px; }
+  .drop-intro h2 { font-size: 10.8vw; line-height: 1.1; }
   .drop-intro .body-copy { font-size: 14px; }
-  .included { margin-top: 35px; }
-  .ingredient-row { padding-block: 18px; }
+  .included { margin-top: 28px; }
+  .ingredient-row { padding-block: 16px; }
   .purchase-panel { padding-top: 22px; }
   .purchase-panel h3 { font-size: 12vw; }
   .price-line { margin-block: 20px 30px; }
   .price-line > span:first-child { font-size: 30px; }
   .packaging-section { grid-template-columns: 1fr; padding-top: 0; gap: 35px; }
-  .packaging-copy h2 { font-size: 14vw; margin-block: 24px; }
-  .packaging-note { margin-block: 30px; }
+  .packaging-copy h2 { font-size: 13.5vw; margin-block: 22px; }
+  .packaging-note { margin-block: 24px; }
   .box-image { aspect-ratio: 1/1.05; }
   .packaging-caption { font-size: 7px; }
-  .craft-section { grid-template-columns: 1fr; padding-block: 75px; gap: 30px; }
-  .craft-section h2 { font-size: 12.8vw; }
+  .craft-section { grid-template-columns: 1fr; padding-block: 60px; gap: 26px; }
+  .craft-section h2 { font-size: 12.4vw; line-height: 1.1; }
   .craft-note { max-width: 280px; margin-top: 10px; margin-left: auto; gap: 28px; }
   .craft-note .eyebrow { font-size: 8px; }
   .logistics-section { grid-template-columns: 1fr; gap: 42px; }
   .logistics-heading h2 { font-size: 13vw; }
-  .logistics-row { gap: 25px; }
+  .logistics-row { gap: 22px; padding-block: 22px; }
   .logistics-row p { font-size: 12px; }
   .final-drop { padding-block: 45px; }
   .final-drop-top { margin-bottom: 30px; }
   .final-drop-top .eyebrow { font-size: 7px; }
-  .final-drop h2 { font-size: 12.2vw; }
+  .final-drop h2 { font-size: 17.2vw; }
   .final-drop-bottom { grid-template-columns: 1fr 1fr; gap: 25px 15px; margin-top: 26px; padding-block: 25px; }
   .final-drop-bottom > .button { grid-column: 1 / -1; }
   .final-drop-bottom > .countdown { border-left: 1px solid var(--line-dark); padding-left: 18px; }
@@ -377,7 +463,7 @@ input::placeholder { color: #777069; opacity: 1; }
   .final-price { font-size: 24px; }
   .final-drop .caption { font-size: 9px; }
   .waitlist-section { grid-template-columns: 1fr; gap: 40px; }
-  .waitlist-section h2 { font-size: 15vw; }
+  .waitlist-section h2 { font-size: 14vw; margin-block: 22px; }
   .waitlist-section > div > .caption { font-size: 10px; }
   .footer { padding-top: 35px; }
   .footer-top .wordmark { font-size: 55px; }
@@ -389,10 +475,10 @@ input::placeholder { color: #777069; opacity: 1; }
   .checkout-nav { min-height: 85px; }
   .checkout-nav > .eyebrow { display: none; }
   .checkout-nav > a:not(:first-child) { font-size: 8px; }
-  .checkout-main { display: flex; flex-direction: column; gap: 55px; padding-block: 45px 30px; }
-  .checkout-form-column > h1 { font-size: 20vw; }
+  .checkout-main { display: flex; flex-direction: column; gap: 40px; padding-block: 30px 40px; }
+  .checkout-form-column > h1 { font-size: 17.5vw; margin-top: 18px; }
   .checkout-form-column > .eyebrow { font-size: 8px; }
-  .checkout-steps { margin-block: 35px; }
+  .checkout-steps { margin-block: 26px; }
   .checkout-steps button { font-size: 10px; }
   .order-summary { position: static; width: 100%; }
   .summary-image { aspect-ratio: 1.75; }
@@ -404,16 +490,16 @@ input::placeholder { color: #777069; opacity: 1; }
   .checkout-actions { gap: 18px; }
   .checkout-actions .button { font-size: 10px; padding-inline: 18px; }
   .checkout-form .body-copy { font-size: 13px; }
-  .receipt-scene, .receipt-empty { margin-bottom: -58px; padding-inline: 13px; }
+  .receipt-scene, .receipt-empty { padding: 35px 13px 40px; }
   .receipt-status { font-size: 7px; line-height: 2; margin-bottom: 35px; }
-  .receipt-paper { padding: 35px 23px 30px; font-size: 10px; }
+  .receipt-paper { padding: 32px 22px 28px; font-size: 11px; }
   .receipt-heading .wordmark { font-size: 72px; }
   .receipt-heading p { font-size: 8px; }
   .receipt-drop h1 { font-size: 10px; }
   .receipt-drop > div > span { font-size: 8px; }
   .receipt-total strong { font-size: 10px; }
   .receipt-actions { gap: 10px 18px; }
-  .receipt-actions .text-button { font-size: 7px; }
+  .receipt-actions .text-button { font-size: 9px; }
   .legal-page { padding-block: 60px; }
   .legal-page h1 { font-size: 15vw; }
   .legal-draft { font-size: 8px; }
@@ -444,6 +530,7 @@ input::placeholder { color: #777069; opacity: 1; }
   .receipt-paper { width: 80mm; padding: 7mm 5mm; background: white !important; color: black; font-size: 9px; box-shadow: none; animation: none !important; transform: none !important; }
   .receipt-paper::after { display: none; }
   .receipt-heading .wordmark { font-size: 60px; }
+  .receipt-heading .deipo-logo { width: 48mm; height: auto; }
   .receipt-good { margin-bottom: 20px; }
   .receipt-paper > * { break-inside: avoid; }
 }

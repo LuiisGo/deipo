@@ -8,7 +8,7 @@ export interface Drop {
   maxQuantityPerOrder: number | null; lowStockThreshold: number; heroImage: string;
   includes: { name: string; description: string }[];
   extras: { id: string; name: string; price: number }[];
-  packagingFrames: string[];
+  packagingFrames: (string | PackagingFrame)[];
   fulfillment: {
     deliveryEnabled: boolean; pickupEnabled: boolean; pickupLabel: string;
     zones: { id: string; label: string; fee: number | null }[];
@@ -23,3 +23,6 @@ export interface DemoOrder {
   slotLabel: string; fulfillmentDay: string;
   items: { name: string; quantity: number; total: number }[];
 }
+
+// Only real supplied frames; labels describe the photographed state.
+export type PackagingFrame = { src: string; alt: string; label: string };

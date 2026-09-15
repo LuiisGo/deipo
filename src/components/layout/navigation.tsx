@@ -1,6 +1,12 @@
+'use client';
 import Link from 'next/link';
-import { Wordmark } from '@/components/brand/wordmark';
-import { LiveStockIndicator } from '@/components/drop/controls';
+import { DeipoLogo } from '@/components/brand/deipo-logo';
+import { LiveStockIndicator, usePreviewHref } from '@/components/drop/controls';
+import { useDrop } from '@/components/drop/drop-context';
+import { isPurchasable } from '@/lib/drop';
 export function Navigation() {
-  return <header className="navigation page-grid"><Link href="/" aria-label="deipo. home"><Wordmark /></Link><nav aria-label="Main navigation"><a href="#the-drop">THE DROP</a><a href="#how-it-works">CÓMO FUNCIONA</a></nav><LiveStockIndicator /></header>;
+  const { status } = useDrop();
+  const home = usePreviewHref('/');
+  const active = isPurchasable(status);
+  return <header className="navigation page-grid"><Link href={home} aria-label="deipo. inicio"><DeipoLogo /></Link><nav aria-label="Navegación principal"><a href="#the-drop">{status === 'sold_out' ? 'ARCHIVE' : 'THE DROP'}</a><a href={active ? '#how-it-works' : '#next-drop'}>{active ? 'CÓMO FUNCIONA' : 'NEXT DROP'}</a></nav><LiveStockIndicator /></header>;
 }

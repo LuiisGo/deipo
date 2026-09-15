@@ -3,7 +3,10 @@ import type { Metadata } from 'next';
 import { getPreviewDrop, type PreviewParams } from '@/content/current-drop';
 import { DropProvider } from '@/components/drop/drop-context';
 import { CheckoutShell } from '@/components/checkout/checkout-shell';
+import { getSiteMode } from '@/lib/site-mode';
+import { SitePresentation } from '@/components/ui/site-presentation';
 export const metadata: Metadata = { title: 'Tu drop', robots: { index: false, follow: false }, alternates: { canonical: null } };
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<PreviewParams> }) {
-  return <Suspense><DropProvider drop={getPreviewDrop(await searchParams)}><CheckoutShell /></DropProvider></Suspense>;
+  const params = await searchParams;
+  return <Suspense><SitePresentation mode={getSiteMode(params)}><DropProvider drop={getPreviewDrop(params)}><CheckoutShell /></DropProvider></SitePresentation></Suspense>;
 }

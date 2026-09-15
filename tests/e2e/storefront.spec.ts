@@ -122,3 +122,114 @@ test('all legal pages and honest success empty state exist without browser error
   await page.goto('/success'); await expect(page.getByText('PROBAR EL CHECKOUT', { exact: false })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+for (const width of [390, 1440]) {
+  test(`V0.1 presentation states and approved artwork at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const mode of ['preview', 'customer-preview']) {
+      for (const state of ['active', 'low_stock', 'sold_out', 'sales_closed', 'upcoming']) {
+        await page.goto(`/?mode=${mode}&state=${state}`);
+        await page.evaluate(() => document.fonts.ready);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await expect(page.locator('.hero-wordmark')).toHaveAttribute('data-logo-status', 'approved-png');
+        await expect(page.locator('.hero-wordmark')).toHaveJSProperty('complete', true);
+        if (mode === 'customer-preview') {
+          await expect(page.locator('.presentation-notice')).toContainText('PEDIDOS NO HABILITADOS');
+          await expect(page.locator('.demo-banner, .preview-controls')).toHaveCount(0);
+          await expect(page.locator('main')).not.toContainText(/PRECIO ESTIMADO|FOTOGRAFÍA ILUSTRATIVA|CONCEPTO DE EMPAQUE/);
+        } else await expect(page.locator('.preview-controls')).toBeVisible();
+        if (['sold_out', 'sales_closed', 'upcoming'].includes(state)) {
+          await expect(page.locator('.purchase-panel, .quantity-control, .countdown, .final-drop')).toHaveCount(0);
+          await expect(page.locator('a[href^="/checkout"]')).toHaveCount(0);
+          await expect(page.locator('.navigation .stock-state')).toContainText('NEXT DROP');
+          await expect(page.locator('.next-chapter')).toBeVisible();
+          if (state === 'sold_out') await expect(page.locator('#the-drop')).toContainText('DROP 001 / ARCHIVE');
+        } else {
+          await expect(page.locator('.navigation .stock-state')).toContainText('GET THE DROP');
+          await expect(page.locator('.purchase-panel')).toContainText('Q175.00');
+          await expect(page.locator('.campaign-aside')).toContainText('80 POR EDICIÓN');
+          const cta = page.locator('.navigation .stock-indicator');
+          expect(await cta.evaluate(el => { const r=el.getBoundingClientRect(); return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2) === el || el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)); })).toBe(true);
+        }
+        await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+        await page.locator('.box-image').scrollIntoViewIfNeeded();
+        await expect(page.locator('.box-image img')).toHaveJSProperty('complete', true);
+        await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+        await page.screenshot({ path: `test-results/v01-${mode}-${state}-${width}.png`, fullPage: true });
+      }
+    }
+  });
+  test(`customer presentation retains mock checkout and receipt at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/?mode=customer-preview');
+    await page.locator('.navigation .stock-indicator').click();
+    await expect(page).toHaveURL(/checkout\?mode=customer-preview/);
+    await expect(page.locator('.demo-banner')).toContainText('NO SE REALIZARÁ NINGÚN COBRO');
+    await page.screenshot({ path: `test-results/v01-checkout-step-0-${width}.png`, fullPage: true });
+    await completeSteps(page);
+    await page.screenshot({ path: `test-results/v01-checkout-review-${width}.png`, fullPage: true });
+    await page.getByRole('button', { name: 'COMPLETAR PRUEBA' }).click();
+    await expect(page).toHaveURL(/success\?mode=customer-preview/);
+    await expect(page.locator('.receipt-total')).toContainText('Q350.00');
+    await expect(page.locator('.receipt-paper')).toContainText('SIN COBRO · SIN RESERVA');
+    await expect(page.locator('.receipt-heading img')).toHaveAttribute('data-logo-status', 'approved-png');
+    await page.screenshot({ path: `test-results/v01-receipt-${width}.png`, fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.locator('.receipt-back').click();
+    await expect(page).toHaveURL(/mode=customer-preview/);
+  });
+}
+
+test('packaging details are keyboard controlled and reduced motion remains static', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?mode=customer-preview');
+  const packaging = page.locator('.packaging-visual');
+  await packaging.scrollIntoViewIfNeeded();
+  await expect(packaging).toHaveAttribute('data-packaging-frame', '0');
+  const seal = packaging.getByRole('button', { name: '02 EL SELLO' });
+  await seal.focus(); await page.keyboard.press('Enter');
+  await expect(seal).toHaveAttribute('aria-pressed', 'true');
+  await expect(packaging).toHaveAttribute('data-packaging-frame', '1');
+  await expect(page.locator('.box-image img')).toHaveJSProperty('complete', true);
+  await page.screenshot({ path: 'test-results/v01-packaging-seal.png', fullPage: false });
+  await packaging.getByRole('button', { name: '03 LA MARCA' }).click();
+  await page.screenshot({ path: 'test-results/v01-packaging-wordmark.png', fullPage: false });
+  await packaging.getByRole('button', { name: '04 EL RITUAL' }).click();
+  await expect(packaging).toHaveAttribute('data-packaging-frame', '3');
+});
+
+test('customer archive and receipt meet automated accessibility checks', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?state=sold_out&mode=customer-preview');
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+  await page.goto('/checkout?mode=customer-preview'); await completeSteps(page);
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+  await page.getByRole('button', { name: 'COMPLETAR PRUEBA' }).click();
+  await expect(page).toHaveURL(/success/);
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+});
+
+
+test('preview defaults and Netlify badge clearance keep the mobile action safe', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?mode=production');
+  await expect(page.locator('.demo-banner')).toContainText('VISTA PREVIA');
+  await expect(page.locator('.skip-link')).toHaveCSS('clip-path', 'inset(50%)');
+  // Reproduce the observed hosting overlay without loading a third-party script.
+  await page.evaluate(() => {
+    const badge=document.createElement('iframe');badge.id='nl-badge-frame';badge.title='Hosting badge test';
+    badge.style.cssText='position:fixed;bottom:16px;right:16px;width:176px;height:42px;z-index:9999;border:0';
+    document.body.appendChild(badge);
+  });
+  const cta=page.locator('.navigation .stock-indicator');
+  const badge=page.locator('#nl-badge-frame');
+  const ctaBox=await cta.boundingBox(); const badgeBox=await badge.boundingBox();
+  expect(ctaBox!.y+ctaBox!.height).toBeLessThan(badgeBox!.y);
+  await cta.click(); await expect(page).toHaveURL(/checkout/);
+  await page.reload(); await page.keyboard.press('Tab');
+  await expect(page.locator('.skip-link')).toBeFocused();
+  await expect(page.locator('.skip-link')).toHaveCSS('clip-path', 'none');
+  expect((await page.locator('.skip-link').boundingBox())!.y).toBeGreaterThanOrEqual(0);
+});

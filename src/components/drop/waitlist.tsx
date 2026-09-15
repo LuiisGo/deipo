@@ -1,4 +1,6 @@
 'use client';
+import { ArrowIcon } from '@/components/ui/arrow-icon';
+import { PreviewOnly } from '@/components/ui/site-presentation';
 import { useState } from 'react';
 import { useDrop } from './drop-context';
 import { track } from '@/lib/analytics';
@@ -10,8 +12,8 @@ export function Waitlist({ early = false }: { early?: boolean }) {
   const closed = status === 'sold_out' || status === 'sales_closed' || status === 'upcoming';
   if (early !== closed) return null;
   return <section id="next-drop" className={`waitlist-section page-grid ${status === 'sold_out' || status === 'sales_closed' ? 'waitlist-prominent' : ''}`}>
-    <div><p className="eyebrow">THERE’S ALWAYS A NEXT CHAPTER</p><h2>SEE YOU<br />NEXT DROP<span className="brand-dot">.</span></h2><p className="body-copy">El próximo drop empieza con vos.</p><p className="caption">Formulario de prueba. Tus datos no se guardan ni se envían. Las notificaciones todavía no están activas.</p></div>
-    {done ? <div className="waitlist-result" role="status"><span className="eyebrow">PRUEBA COMPLETA</span><p>Aquí empieza<br />el próximo capítulo.</p><span className="caption">Tus datos se validaron y descartaron. No quedaste suscrito a ninguna lista.</span><button className="text-button" onClick={() => setDone(false)}>VOLVER A PROBAR ↗</button></div> :
+    <div><p className="eyebrow">THERE’S ALWAYS A NEXT CHAPTER</p><h2>SEE YOU<br />NEXT DROP<span className="brand-dot">.</span></h2><p className="body-copy">El próximo drop empieza con vos.</p><PreviewOnly><p className="caption">Formulario de prueba. Tus datos no se guardan ni se envían. Las notificaciones todavía no están activas.</p></PreviewOnly></div>
+    {done ? <div className="waitlist-result" role="status"><span className="eyebrow">PRUEBA COMPLETA</span><p>Aquí empieza<br />el próximo capítulo.</p><span className="caption">Tus datos se validaron y descartaron. No quedaste suscrito a ninguna lista.</span><button className="text-button" onClick={() => setDone(false)}>VOLVER A PROBAR <ArrowIcon /></button></div> :
       <form className="waitlist-form" onSubmit={event => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
@@ -22,9 +24,9 @@ export function Waitlist({ early = false }: { early?: boolean }) {
       }}>
         <label>Nombre<input name="name" autoComplete="name" required minLength={2} maxLength={100} placeholder="Tu nombre" /></label>
         <label>WhatsApp / teléfono<input name="phone" autoComplete="tel" type="tel" pattern="[+0-9() .\-]{8,20}" required maxLength={20} placeholder="+502" /></label>
-        <label>Correo electrónico<input name="email" autoComplete="email" type="email" required maxLength={254} placeholder="you@example.com" /></label>
+        <label>Correo electrónico<input name="email" autoComplete="email" type="email" required maxLength={254} placeholder="vos@ejemplo.com" /></label>
         {error && <p className="form-error" role="alert">{error}</p>}
-        <button className="button button-dark" type="submit">AVISAME DEL PRÓXIMO DROP <span aria-hidden="true">↗</span></button>
+        <button className="button button-dark" type="submit">AVISAME DEL PRÓXIMO DROP <span aria-hidden="true"><ArrowIcon /></span></button><PreviewOnly otherwise={<p className="caption waitlist-safeguard">Prueba interna: no guarda datos ni activa notificaciones.</p>}>{null}</PreviewOnly>
       </form>}
   </section>;
 }

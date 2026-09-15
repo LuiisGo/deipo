@@ -1,3 +1,4 @@
+import { ArrowIcon } from '@/components/ui/arrow-icon';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -12,5 +13,5 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {
   const page = getLegal((await params).slug); if (!page) notFound();
-  return <><header className="checkout-nav page-grid"><Link href="/" aria-label="deipo. inicio"><Wordmark /></Link><Link href="/">← VOLVER AL DROP</Link></header><main id="main" className="legal-page page-grid"><p className="eyebrow">{page.title}</p><h1>{page.heading}</h1><p className="legal-draft">BORRADOR — REQUIERE REVISIÓN LEGAL</p><p className="legal-intro">{page.intro}</p>{page.sections.map(([title, body]) => <section key={title}><h2>{title}</h2><p>{body}</p></section>)}</main><Footer /></>;
+  return <><header className="checkout-nav page-grid"><Link href="/" aria-label="deipo. inicio"><Wordmark /></Link><Link href="/"><ArrowIcon direction="left" /> VOLVER AL DROP</Link></header><main id="main" className="legal-page page-grid"><p className="eyebrow">{page.title}</p><h1>{page.heading}</h1><p className="legal-draft">BORRADOR — REQUIERE REVISIÓN LEGAL</p><p className="legal-intro">{page.intro}</p>{page.sections.map(([title, body]) => <section key={title}><h2>{title}</h2><p>{body}</p></section>)}</main><Footer /></>;
 }

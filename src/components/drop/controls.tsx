@@ -1,4 +1,5 @@
 'use client';
+import { ArrowIcon } from '@/components/ui/arrow-icon';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -6,23 +7,25 @@ import { useDrop } from './drop-context';
 import { useOrder } from '@/components/checkout/order-context';
 import { isPurchasable, pad, quantityLimit, money } from '@/lib/drop';
 import { track } from '@/lib/analytics';
+import { PreviewOnly, useSiteMode } from '@/components/ui/site-presentation';
 import type { Drop } from '@/types/drop';
 
 export function usePreviewHref(path: string) {
   const params = useSearchParams();
   const next = new URLSearchParams();
-  for (const key of ['state', 'clock', 'slots', 'payment']) if (params.get(key)) next.set(key, params.get(key)!);
+  for (const key of ['state', 'clock', 'slots', 'payment', 'mode', 'image']) if (params.get(key)) next.set(key, params.get(key)!);
   return `${path}${next.size ? `?${next}` : ''}`;
 }
 export function LiveStockIndicator({ inline = false }: { inline?: boolean }) {
   const { drop, status } = useDrop();
   const href = usePreviewHref('/checkout');
   const available = isPurchasable(status);
-  const label = status === 'sold_out' ? 'SOLD OUT' : status === 'sales_closed' ? 'PEDIDOS CERRADOS' : status === 'upcoming' ? 'PRÓXIMAMENTE' : status === 'low_stock' ? `QUEDAN ${drop.capacity - drop.sold}` : 'VISTA PREVIA';
-  return <Link href={available ? href : '#next-drop'} className={`stock-indicator ${inline ? 'stock-inline' : ''}`} aria-label={`${label}. ${drop.sold} of ${drop.capacity} sold in this demo. ${available ? 'Go to checkout' : 'Next drop'}`}>
-    <span className="stock-state"><i aria-hidden="true" />{label}</span>
-    <span className="stock-count">{pad(drop.sold)} <span>/ {pad(drop.capacity)}</span> SOLD <small>DEMO</small></span>
-    <span className="stock-arrow" aria-hidden="true">↗</span>
+  const mode = useSiteMode();
+  const label = status === 'sold_out' ? 'SOLD OUT' : status === 'sales_closed' ? 'PEDIDOS CERRADOS' : status === 'upcoming' ? 'PRÓXIMAMENTE' : status === 'low_stock' ? `QUEDAN ${drop.capacity - drop.sold}` : 'GET THE DROP';
+  return <Link href={available ? href : '#next-drop'} className={`stock-indicator ${inline ? 'stock-inline' : ''}`} data-stock-status={status} aria-label={`${label}. ${status === 'upcoming' ? 'Próximamente' : `${drop.sold} de ${drop.capacity} vendidos`}. ${mode === 'preview' ? 'Stock de prueba. ' : ''}${available ? 'Ir al checkout de prueba' : 'Próximo drop'}`}>
+    <span className="stock-state"><i aria-hidden="true" />{available ? (status === 'low_stock' ? <><span className="low-stock-label">{label}</span><span className="stock-action">GET THE DROP</span></> : label) : 'NEXT DROP'}</span>
+    <span className="stock-count">{status === 'upcoming' ? 'PRÓXIMAMENTE' : <>{pad(drop.sold)} <span>/ {pad(drop.capacity)}</span> {status === 'sales_closed' ? 'CLOSED' : 'SOLD'}</>}<PreviewOnly><small>DEMO</small></PreviewOnly></span>
+    <span className="stock-arrow" aria-hidden="true"><ArrowIcon /></span>
   </Link>;
 }
 export function Countdown() {
@@ -35,10 +38,11 @@ export function Countdown() {
   }, [drop.salesCloseAt]);
   const remaining = drop.salesCloseAt && now ? Math.max(0, Math.floor((Date.parse(drop.salesCloseAt) - now) / 1000)) : null;
   const clock = remaining === null ? null : `${String(Math.floor(remaining / 3600)).padStart(2, '0')} : ${String(Math.floor(remaining / 60) % 60).padStart(2, '0')} : ${String(remaining % 60).padStart(2, '0')}`;
+  if (!isPurchasable(status)) return null;
   return <div className="countdown">
-    <span className="eyebrow">{status === 'sales_closed' ? 'PEDIDOS CERRADOS' : 'CIERRE DE PEDIDOS'}</span>
+    <span className="eyebrow">CIERRE DE PEDIDOS</span>
     <strong>{clock ?? 'VIERNES A LAS 11:59 PM'}</strong>
-    <span className="caption">{drop.salesCloseAt ? 'FECHA DE PRUEBA · GUATEMALA, UTC−6' : 'Guatemala, UTC−6 · fecha por confirmar'}</span>
+    <PreviewOnly><span className="caption">{drop.salesCloseAt ? 'FECHA DE PRUEBA · GUATEMALA, UTC−6' : 'Guatemala, UTC−6 · fecha por confirmar'}</span></PreviewOnly>
   </div>;
 }
 export function DropCTA({ className = '', children }: { className?: string; children?: React.ReactNode }) {
@@ -46,7 +50,7 @@ export function DropCTA({ className = '', children }: { className?: string; chil
   const href = usePreviewHref('/checkout');
   const canOrder = isPurchasable(status);
   return <Link className={`button ${className}`} href={canOrder ? href : '#next-drop'} onClick={() => { if (canOrder) track('click_get_drop', { drop_id: drop.id }); }}>
-    {children ?? (canOrder ? 'GET THE DROP' : 'PRÓXIMO DROP')}<span aria-hidden="true">↗</span>
+    {children ?? (canOrder ? 'GET THE DROP' : 'NEXT DROP')}<span aria-hidden="true"><ArrowIcon /></span>
   </Link>;
 }
 export function QuantityControl({ drop }: { drop: Drop }) {
@@ -70,6 +74,6 @@ export function Extras({ drop }: { drop: Drop }) {
 }
 export function PurchaseControls() {
   const { drop, status } = useDrop();
-  if (!isPurchasable(status)) return <div className="purchase-closed"><span className="eyebrow">{status.replaceAll('_', ' ')}</span><p>Esta edición ya no recibe pedidos.</p><DropCTA /></div>;
-  return <><div className="quantity-row"><span className="eyebrow">CANTIDAD</span><QuantityControl drop={drop} /></div>{drop.extras.length > 0 && <Extras drop={drop} />}<DropCTA /><p className="caption purchase-note">Checkout de prueba. Sin cobro. Sin reserva.</p></>;
+  if (!isPurchasable(status)) return null;
+  return <><div className="quantity-row"><span className="eyebrow">CANTIDAD</span><QuantityControl drop={drop} /></div>{drop.extras.length > 0 && <Extras drop={drop} />}<DropCTA /><PreviewOnly><p className="caption purchase-note">Checkout de prueba. Sin cobro. Sin reserva.</p></PreviewOnly></>;
 }

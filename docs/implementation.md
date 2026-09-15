@@ -1,4 +1,12 @@
-# WEB V0 implementation record
+# WEB V0 / V0.1 implementation record
+
+## Current release: WEB V0.1
+
+[Creative-polish report](creative-polish-v01.md): original PNG logos integrated, two safe presentation modes, full SOLD OUT archive, packaging detail progression, deliberate Anton typography, tighter mobile layout and refined checkout/receipt. Business and backend boundaries are unchanged.
+
+Final verification (2026-09-15): **24/24 browser tests, 8/8 unit tests, ESLint with no warnings, strict TypeScript and production build passed.** Automated WCAG A/AA audits passed on home, checkout, customer archive, review and receipt. Source and rendered-text scans found no emojis. The published V0 baseline at deipo.netlify.app was inspected and its Netlify deploy was verified against commit `e87896a`. Git/deployment completion for V0.1 is recorded at delivery.
+
+The sections below preserve the **historical V0 implementation record**. Its wordmark and deployment-status statements are superseded by the V0.1 report above.
 
 ## Scope and confirmed choices
 

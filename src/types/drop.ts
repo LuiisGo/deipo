@@ -37,5 +37,5 @@ export interface DemoOrder {
   items: { name: string; quantity: number; total: number }[];
 }
 
-// Only real supplied frames; labels describe the photographed state.
+// Supplied or owner-authorized generated assets; labels describe the depicted state.
 export type PackagingFrame = { src: string; alt: string; label: string };

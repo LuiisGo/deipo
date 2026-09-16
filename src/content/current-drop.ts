@@ -27,7 +27,14 @@ export const currentDrop: Drop = {
     { name: 'JUS + MUSTARD CREAM', description: 'Los detalles que lo completan.' },
   ],
   extras: [],
-  packagingFrames: ['/packaging/black-box.webp'],
+  packagingFrames: [
+    { src: '/drops/drop-001/packaging/frame-01-closed.webp', label: 'LA CAJA', alt: 'Caja deipo. cerrada, negra mate, con marca crema y sello naranja intacto.' },
+    { src: '/drops/drop-001/packaging/frame-02-seal-detail.webp', label: 'EL SELLO', alt: 'Detalle del sello naranja DROP 001 — SUNDAY ROAST sobre la caja cerrada.' },
+    { src: '/drops/drop-001/packaging/frame-03-crack-open.webp', label: 'LA PRIMERA APERTURA', alt: 'El sello se interrumpe y la tapa se levanta apenas, dejando ver el papel interior.' },
+    { src: '/drops/drop-001/packaging/frame-04-half-open.webp', label: 'LO QUE VIENE', alt: 'Caja parcialmente abierta: aparecen el Sunday Roast, el papel crema y el insert.' },
+    { src: '/drops/drop-001/packaging/frame-05-full-reveal.webp', label: 'GOOD THINGS. INSIDE.', alt: 'Caja abierta con roast beef, Yorkshire pudding, papas, vegetales y un insert deipo.' },
+    { src: '/drops/drop-001/packaging/frame-06-final-ritual.webp', label: 'EL RITUAL', alt: 'Detalle del interior abierto: insert deipo., papel crema, caja negra y Sunday Roast.' },
+  ],
   fulfillment: {
     deliveryEnabled: true, pickupEnabled: true,
     pickupLabel: 'Zona 10 · dirección exacta por confirmar',

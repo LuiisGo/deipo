@@ -1,6 +1,12 @@
 # WEB V0 / V0.1 / V0.2 implementation record
 
-## Current release: WEB V0.2
+## Current milestone: Packaging Reveal Final
+
+[Packaging report](packaging-reveal-final.md): six generated 4:3 moments, scroll-driven pinned stage, responsive WebP images, decoded-image crossfades and static/recovery fallbacks. [Prompt set](packaging-generation-prompts.md) records generation direction. The previous single-photo controls are superseded; all other storefront flows retain the V0.2 baseline.
+
+Final verification (2026-09-16): **40/40 browser tests against the production build, 17/17 unit tests, ESLint without warnings, strict TypeScript and production compilation passed.** Packaging checks cover all six moments and reverse/keyboard progression at 390/430/768/1440px, delayed/missing assets, total failure, reduced motion and short viewports. Automated WCAG A/AA checks and existing commerce journeys pass. Source scans found no emojis. Browser layout assertions wait for streamed content to become visible and for the existing header transition to finish. Git and hosting are verified separately at delivery.
+
+## Baseline release: WEB V0.2
 
 [Drop-system report](drop-system-v02.md): confirmed pre-launch sales contract, a 13/80 mock snapshot, validated sold/held/available projection, central opening/closing logic, 24-hour times, next-drop scheduling references and a mobile signal that compacts into navigation. Optional stock demonstration is explicitly enabled only in preview. Brand assets, packaging, checkout architecture and receipt remain intact. No production backend or real sales were added.
 

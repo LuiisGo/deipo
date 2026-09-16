@@ -25,7 +25,7 @@ for (const width of [320, 375, 390, 430, 768, 1024, 1280, 1440]) {
     await expect(page.getByText('VISTA PREVIA', { exact: true }).first()).toBeVisible();
     if (width === 390 || width === 1440) {
       await page.locator('.box-image').scrollIntoViewIfNeeded();
-      await expect(page.locator('.box-image img')).toHaveJSProperty('complete', true);
+      await expect(page.locator('.packaging-layer[data-visible=true] img')).toHaveJSProperty('complete', true);
       await page.evaluate(() => window.scrollTo({top: 0, behavior: 'instant'}));
       await page.screenshot({ path: `test-results/home-${width}.png`, fullPage: true });
     }
@@ -160,7 +160,7 @@ for (const width of [390, 1440]) {
         await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
         expect(await page.locator('body').innerText()).not.toMatch(/\b\d{1,2}(?::\d{2})?\s*(?:AM|PM)\b/i);
         await page.locator('.box-image').scrollIntoViewIfNeeded();
-        await expect(page.locator('.box-image img')).toHaveJSProperty('complete', true);
+        await expect(page.locator('.packaging-layer[data-visible=true] img')).toHaveJSProperty('complete', true);
         await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
         await page.screenshot({ path: `test-results/v01-${mode}-${state}-${width}.png`, fullPage: true });
       }
@@ -188,22 +188,21 @@ for (const width of [390, 1440]) {
   });
 }
 
-test('packaging details are keyboard controlled and reduced motion remains static', async ({ page }) => {
+test('packaging reduced motion shows the final ritual without a pinned journey or controls', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?mode=customer-preview');
   const packaging = page.locator('.packaging-visual');
   await packaging.scrollIntoViewIfNeeded();
-  await expect(packaging).toHaveAttribute('data-packaging-frame', '0');
-  const seal = packaging.getByRole('button', { name: '02 EL SELLO' });
-  await seal.focus(); await page.keyboard.press('Enter');
-  await expect(seal).toHaveAttribute('aria-pressed', 'true');
-  await expect(packaging).toHaveAttribute('data-packaging-frame', '1');
-  await expect(page.locator('.box-image img')).toHaveJSProperty('complete', true);
-  await page.screenshot({ path: 'test-results/v01-packaging-seal.png', fullPage: false });
-  await packaging.getByRole('button', { name: '03 LA MARCA' }).click();
-  await page.screenshot({ path: 'test-results/v01-packaging-wordmark.png', fullPage: false });
-  await packaging.getByRole('button', { name: '04 EL RITUAL' }).click();
-  await expect(packaging).toHaveAttribute('data-packaging-frame', '3');
+  await expect(packaging).toHaveAttribute('data-packaging-frame', '5');
+  await expect(packaging).toHaveAttribute('data-packaging-mode', 'static');
+  await expect(packaging.getByRole('button')).toHaveCount(0);
+  await expect(page.locator('.packaging-sticky')).toHaveCSS('position', 'relative');
+  expect(await page.locator('.packaging-layer[data-visible=true]').evaluate(el => parseFloat(getComputedStyle(el).transitionDuration))).toBeLessThanOrEqual(.001);
+  await page.keyboard.press('PageDown');
+  await expect(packaging).toHaveAttribute('data-packaging-frame', '5');
+  expect(errors).toEqual([]);
 });
 
 test('customer archive and receipt meet automated accessibility checks', async ({ page }) => {
@@ -231,10 +230,13 @@ test('preview defaults and Netlify badge clearance keep the mobile action safe',
   });
   const cta=page.locator('.navigation .stock-indicator');
   const badge=page.locator('#nl-badge-frame');
+  await expect(cta).toBeVisible();
   const ctaBox=await cta.boundingBox(); const badgeBox=await badge.boundingBox();
   expect(ctaBox!.y+ctaBox!.height).toBeLessThan(badgeBox!.y);
   await cta.click(); await expect(page).toHaveURL(/checkout/);
-  await page.reload(); await page.keyboard.press('Tab');
+  await page.reload();
+  await expect(page.locator('.checkout-nav')).toBeVisible();
+  await page.keyboard.press('Tab');
   await expect(page.locator('.skip-link')).toBeFocused();
   await expect(page.locator('.skip-link')).toHaveCSS('clip-path', 'none');
   expect((await page.locator('.skip-link').boundingBox())!.y).toBeGreaterThanOrEqual(0);
@@ -244,6 +246,8 @@ for (const width of [320, 390, 430]) {
   test(`mobile signal stays usable while compacting and returning at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto('/?mode=customer-preview');
+    // Streamed HTML can exist while its container is still hidden and unscrollable.
+    await expect(page.locator('#the-drop')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const nav = page.locator('.navigation');
     const signal = nav.locator('.stock-indicator');

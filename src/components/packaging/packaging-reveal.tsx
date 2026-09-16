@@ -1,42 +1,60 @@
 'use client';
-import { ArrowIcon } from '@/components/ui/arrow-icon';
-import { useRef, useState } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Media } from '@/components/ui/media';
+import Image from 'next/image';
+import { useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useScroll, useMotionValueEvent, useInView } from 'framer-motion';
+import { availablePackagingFrame, packagingSequence } from '@/lib/packaging';
 import type { PackagingFrame } from '@/types/drop';
 
-const details = [
-  { label: 'LA CAJA', scale: 1, origin: '50% 50%' },
-  { label: 'EL SELLO', scale: 2.25, origin: '50% 78%' },
-  { label: 'LA MARCA', scale: 2.05, origin: '50% 34%' },
-  { label: 'EL RITUAL', scale: 1, origin: '50% 50%' },
-];
-export function PackagingReveal({ frames }: { frames: (string | PackagingFrame)[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
-  const [scrollFrame, setScrollFrame] = useState(0);
-  const [chosen, setChosen] = useState<number | null>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 75%', 'end 25%'] });
-  const sequence = frames.length > 1;
-  const count = sequence ? frames.length : details.length;
+const staticQuery = '(prefers-reduced-motion: reduce), (max-height: 600px)';
+const staticViewport = () => window.matchMedia(staticQuery).matches;
+function subscribeViewport(callback: () => void) {
+  const query = window.matchMedia(staticQuery);
+  query.addEventListener('change', callback);
+  return () => query.removeEventListener('change', callback);
+}
+const serverViewport = () => false;
+
+export function PackagingReveal({ frames, children }: { frames: (string | PackagingFrame)[]; children: ReactNode }) {
+  const section = useRef<HTMLElement>(null);
+  const stage = useRef<HTMLElement>(null);
+  // A shared server snapshot avoids replacing the section during hydration.
+  const prefersStatic = useSyncExternalStore(subscribeViewport, staticViewport, serverViewport);
+  const near = useInView(stage, { margin: '700px 0px', once: true });
+  const [progressFrame, setProgressFrame] = useState(0);
+  const [ready, setReady] = useState<Set<string>>(() => new Set());
+  const [failed, setFailed] = useState<Set<string>>(() => new Set());
+  const sequence = packagingSequence(frames);
+  const allFailed = sequence.length > 0 && sequence.every(frame => failed.has(frame.src));
+  const staticMode = prefersStatic || sequence.length <= 1 || allFailed;
+  const { scrollYProgress } = useScroll({ target: section, offset: ['start start', 'end end'] });
   useMotionValueEvent(scrollYProgress, 'change', value => {
-    if (!reduced) setScrollFrame(Math.min(count - 1, Math.floor(value * count)));
+    if (!staticMode) setProgressFrame(Math.min(sequence.length - 1, Math.max(0, Math.floor(value * sequence.length))));
   });
-  if (!frames.length) return <div className="packaging-empty caption">El próximo detalle está en camino.</div>;
-  const active = Math.min(count - 1, chosen ?? (reduced ? 0 : scrollFrame));
-  const asset = frames[sequence ? active : 0];
-  const src = typeof asset === 'string' ? asset : asset.src;
-  const alt = typeof asset === 'string' ? 'Caja deipo. negra mate, wordmark crema y sello naranja de DROP 001.' : asset.alt;
-  const labels = sequence ? frames.map((frame, i) => typeof frame === 'string' ? `FOTOGRAMA ${String(i + 1).padStart(2, '0')}` : frame.label) : details.map(frame => frame.label);
-  return <div ref={ref} className="packaging-visual" data-packaging-frame={active} data-packaging-mode={sequence ? 'sequence' : 'details'}>
-    <div className="packaging-frame-heading eyebrow"><span>DEIPO / OBJECT STUDY</span><span>{String(active + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}</span></div>
-    <div className="packaging-mask"><LazyMotion features={domAnimation}><m.div
-      className="packaging-image-stage"
-      animate={{ scale: sequence ? 1 : details[active].scale }}
-      style={{ transformOrigin: sequence ? '50% 50%' : details[active].origin }}
-      transition={{ duration: reduced ? 0 : .65, ease: [.22, 1, .36, 1] }}
-    ><Media key={src} src={src} alt={alt} className="box-image" sizes="(max-width: 767px) 180vw, 100vw" /></m.div></LazyMotion></div>
-    <div className="packaging-details" role="group" aria-label="Detalles del empaque">{labels.map((label, index) => <button type="button" key={`${index}-${label}`} aria-pressed={active === index} onClick={() => setChosen(index)}><span>{String(index + 1).padStart(2, '0')}</span>{label}</button>)}</div>
-    <div className="packaging-caption-row"><span className="packaging-caption eyebrow">THE BOX IS OURS.<br />THE MOMENT IS YOURS.</span>{chosen !== null && !reduced && <button type="button" className="text-button" onClick={() => setChosen(null)}>SEGUIR EL SCROLL <ArrowIcon direction="down" /></button>}</div>
-  </div>;
+  const target = staticMode ? sequence.length - 1 : Math.min(progressFrame, sequence.length - 1);
+  const active = availablePackagingFrame(target, sequence, ready, failed);
+  const current = sequence[active];
+  return <section ref={section} id="packaging" className="packaging-section" aria-labelledby="packaging-title" data-packaging-static={staticMode}>
+    <div className="packaging-sticky page-grid">
+      {children}
+      <figure ref={stage} className="packaging-visual" data-packaging-mode={staticMode ? 'static' : 'sequence'} data-packaging-frame={active} data-packaging-target={target}>
+        <div className="packaging-frame-heading eyebrow"><span>DEIPO / OPENING RITUAL</span><span>{current ? String(active + 1).padStart(2, '0') : '—'} / {String(sequence.length).padStart(2, '0')}</span></div>
+        <div className="packaging-mask box-image">
+          {active < 0 && <div className="packaging-placeholder"><span className="eyebrow">GOOD THINGS. INSIDE.</span><p>{allFailed || !sequence.length ? 'El próximo detalle está en camino.' : 'El ritual está por abrirse.'}</p></div>}
+          {sequence.map((frame, index) => (index === 0 || near) && !failed.has(frame.src) && <div className="packaging-layer" key={`${index}-${frame.src}`} data-visible={index === active} aria-hidden={index !== active}>
+            <Image src={frame.src} alt={index === active ? frame.alt : ''} fill sizes="(max-width: 767px) 92vw, 54vw" loading={near ? 'eager' : 'lazy'}
+              onLoad={event => {
+                const image = event.currentTarget;
+                void image.decode().then(() => setReady(previous => new Set(previous).add(frame.src))).catch(() => setFailed(previous => new Set(previous).add(frame.src)));
+              }}
+              onError={() => setFailed(previous => new Set(previous).add(frame.src))} />
+          </div>)}
+        </div>
+        <figcaption className="packaging-caption-row">
+          <span className="packaging-caption eyebrow">{current?.label ?? 'EL RITUAL'}</span>
+          <span className="packaging-scroll-note caption">{staticMode ? 'GOOD THINGS. INSIDE.' : 'SE ABRE CON TU SCROLL'}</span>
+        </figcaption>
+        <div className="packaging-progress" aria-hidden="true">{sequence.map((frame, index) => <span key={`${index}-${frame.src}`} data-complete={index <= active} />)}</div>
+      </figure>
+    </div>
+  </section>;
 }

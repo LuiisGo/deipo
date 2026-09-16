@@ -1,4 +1,4 @@
-# deipo. / WEB V0.2
+# deipo. / WEB V0.2 — Packaging Reveal Final
 
 An editorial, mobile-first storefront for limited food drops in Guatemala City. Built around **DROP 001 — SUNDAY ROAST** with a warm cream opening, cinematic food photography, restrained stock signal and a thermal receipt experience.
 
@@ -45,7 +45,7 @@ Webpack is selected explicitly for reproducible production builds; development u
 
 Default: `preview`. For a clean internal presentation, open `/?mode=customer-preview`. Combine with `state=sold_out` to inspect the archive. `NEXT_PUBLIC_SITE_MODE` sets the build default; the query can override it. Neither mode enables orders, payment, persistence or indexing. Checkout/waitlist safeguards stay visible.
 
-The storefront is hosted at [deipo.netlify.app](https://deipo.netlify.app). See [V0.2 drop system](docs/drop-system-v02.md) for inventory, scheduling, the mobile signal and the future Admin contract. [V0.1 creative polish](docs/creative-polish-v01.md) preserves the artwork and typography decisions.
+The storefront is hosted at [deipo.netlify.app](https://deipo.netlify.app). See [Packaging Reveal Final](docs/packaging-reveal-final.md) for the six-frame scroll ritual, assets, loading and static fallbacks. See [V0.2 drop system](docs/drop-system-v02.md) for inventory, scheduling, the mobile signal and the future Admin contract. [V0.1 creative polish](docs/creative-polish-v01.md) preserves the artwork and typography decisions.
 
 ## Preview states
 
@@ -76,7 +76,7 @@ State parameters are carried into checkout. They are preview tooling and are nev
 - `src/components/checkout/order-context.tsx`: checkout context; sessionStorage holds only non-sensitive selections. Contact/receipt remain in memory and disappear on full reload.
 - `src/lib/demo-services.ts`: validation and simulated completion. Replace with server-authoritative order/payment workflow.
 - `src/lib/analytics.ts`: typed event adapter and runtime PII allowlist. No trackers run in V0.
-- `src/components/packaging/packaging-reveal.tsx`: full-box/seal/wordmark detail sequence with keyboard controls and reduced-motion fallback. `packagingFrames` accepts future real frames with optional alt text and labels.
+- `src/components/packaging/packaging-reveal.tsx`: six-frame scroll reveal, nearby asset loading, decoded-image crossfades and static reduced-motion/short-viewport fallback. Central `packagingFrames` records carry paths, alt text and moment labels; legacy paths still work.
 - `src/components/receipt/receipt-printer.tsx`: receipt from actual demo selections, no fabricated purchase on direct navigation.
 
 Server Components render the route content. Interactive islands handle state, forms, clock, stock, motion and receipt. No extra state library. Fonts are self-hosted through Fontsource: Anton for display, Manrope for functional text. The supplied logo artwork is integrated through `DeipoLogo` using owner-authorized transparent PNG copies. Original vector SVG is preferred for future reproduction, but the text approximation is no longer used while these assets are present.
@@ -89,7 +89,7 @@ Server Components render the route content. Interactive islands handle state, fo
 - Waitlist validates and discards data; nobody is subscribed or notified.
 - Payment simulation requests no card details and cannot charge anything.
 - No database, inventory holds, Recurrente, WhatsApp API, CRM, kitchen/admin or n8n workflows.
-- AI-generated food photograph and supplied packaging concept are temporary visual assets. Production food photography is still pending. Original logo SVG, packaging opening frames and a final printer recording remain desirable future assets; supplied PNG logos are now integrated.
+- Food and six packaging reveal frames are generated conceptual visuals. PNG masters and optimized WebPs are retained in the project; final production food/packaging photography or renders and physical packaging validation remain pending. Original logo SVG and a final printer recording remain desirable future assets; supplied PNG logos are integrated.
 - Receipt sound is a quiet synthesized prototype, triggered only by the sound control. The receipt works silently when audio is unavailable.
 
 ## Integration sequence after V0 approval

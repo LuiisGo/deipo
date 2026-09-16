@@ -1,4 +1,4 @@
-# deipo. / WEB V0.1
+# deipo. / WEB V0.2
 
 An editorial, mobile-first storefront for limited food drops in Guatemala City. Built around **DROP 001 — SUNDAY ROAST** with a warm cream opening, cinematic food photography, restrained stock signal and a thermal receipt experience.
 
@@ -45,18 +45,20 @@ Webpack is selected explicitly for reproducible production builds; development u
 
 Default: `preview`. For a clean internal presentation, open `/?mode=customer-preview`. Combine with `state=sold_out` to inspect the archive. `NEXT_PUBLIC_SITE_MODE` sets the build default; the query can override it. Neither mode enables orders, payment, persistence or indexing. Checkout/waitlist safeguards stay visible.
 
-The published baseline is [deipo.netlify.app](https://deipo.netlify.app). See [V0.1 creative polish](docs/creative-polish-v01.md) for mode behavior, typography comparison, assets and mobile changes.
+The storefront is hosted at [deipo.netlify.app](https://deipo.netlify.app). See [V0.2 drop system](docs/drop-system-v02.md) for inventory, scheduling, the mobile signal and the future Admin contract. [V0.1 creative polish](docs/creative-polish-v01.md) preserves the artwork and typography decisions.
 
 ## Preview states
 
 Use the state selector at the bottom of the homepage, or:
 
-- `/?state=active`
+- `/?state=active` — 13 confirmed-prelaunch units in the mock fixture; 013 / 080 SOLD, 67 available. This is not evidence of actual business sales.
 - `/?state=low_stock` — 74/80 illustrative sold, 6 available
 - `/?state=sold_out` — 80/80, ordering disabled, next-drop form first
 - `/?state=sales_closed` — closing state, ordering disabled
 - `/?state=upcoming` — no orders yet
 - `/?clock=demo` — fixed example deadline, Friday September 18, 2026 at 23:59 Guatemala / September 19 at 05:59 UTC. It expires; it never resets on reload.
+- `/?opening=demo` — fixed example opening, Tuesday September 15, 2026 at 00:00 Guatemala. Not a launch announcement.
+- `/?mode=preview&stock=drift` — opt-in internal stock movement: +1, +3, +5 total over 36 seconds, then stable. Visible simulation notice; ignored by customer-preview and not carried into checkout.
 - `/?image=missing` — branded image fallback
 - `/checkout?slots=none` — unavailable time windows
 - `/checkout?payment=fail` — first completion fails, retry succeeds
@@ -66,6 +68,8 @@ State parameters are carried into checkout. They are preview tooling and are nev
 ## Content and architecture
 
 - `src/content/current-drop.ts`: typed drop data, estimated price, capacity, fixed deadline, fulfillment, time slots, recipe and asset paths.
+- `src/lib/inventory.ts`: validated pre-launch/sold/held projection. Sold already includes pre-launch sales; held units only reduce availability.
+- `src/lib/time.ts`: strict 24-hour slot and opening formatting, explicitly in Guatemala's time zone.
 - `src/content/brand.ts`: brand copy, campaign copy, social/contact placeholders and canonical origin.
 - `src/app/globals.css`: brand tokens, layout system, responsive rules, reduced motion and receipt print stylesheet.
 - `src/components/drop/drop-context.tsx`: injected inventory snapshot and automatic sales-close state; future subscription boundary.
@@ -79,7 +83,7 @@ Server Components render the route content. Interactive islands handle state, fo
 
 ## What remains mock / pending
 
-- Static inventory examples; no realtime backend and no stock decrement.
+- Injected inventory examples; no realtime backend or inventory writes. Customer-preview stays stable. Only explicitly enabled internal preview can simulate a bounded stock increase.
 - Q175 all-inclusive estimate; no paid extras or per-order cap beyond stock.
 - Recipe, portions, allergens, final price, launch date, final zones/fees, pickup address, slot capacities and legal policies require confirmation.
 - Waitlist validates and discards data; nobody is subscribed or notified.
@@ -91,6 +95,8 @@ Server Components render the route content. Interactive islands handle state, fo
 ## Integration sequence after V0 approval
 
 Supabase/PostgreSQL should own drops, available units, capacity, slots, holds and orders. Recurrente confirmation must be verified on the server through signed/validated webhooks before marking a paid order or issuing a real receipt. A browser redirect or URL parameter is never payment proof. Connect waitlist persistence and consent separately, then analytics, CRM and n8n behind server-side boundaries.
+
+Future DEIPO Admin must let founders configure confirmed pre-launch units and opening/closing timestamps. The storefront consumes the authoritative sold snapshot, which combines confirmed pre-launch and online sales. Holds remain distinct. The [Phase 2 contract](docs/drop-system-v02.md#phase-2-deipo-admin-and-backend-ownership) defines the handoff without implementing an admin or backend now.
 
 ## SEO, privacy and deployment
 

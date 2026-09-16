@@ -1,15 +1,22 @@
 import type { Drop, DropStatus, Selection } from '@/types/drop';
+import { getInventory } from './inventory';
+import { timestamp } from './time';
 export const money = (amount: number) => `Q${amount.toFixed(2)}`;
 export const pad = (value: number) => String(value).padStart(3, '0');
 export function getDropStatus(drop: Drop, now = Date.now()): DropStatus {
-  if (drop.sold >= drop.capacity || drop.status === 'sold_out') return 'sold_out';
-  if (drop.status === 'sales_closed' || (drop.salesCloseAt && Date.parse(drop.salesCloseAt) <= now)) return 'sales_closed';
-  if (drop.status === 'upcoming') return 'upcoming';
-  if (drop.capacity - drop.sold <= drop.lowStockThreshold) return 'low_stock';
-  return drop.status;
+  const inventory = getInventory(drop);
+  const opens = drop.ordersOpenAt ? timestamp(drop.ordersOpenAt) : null;
+  const closes = drop.salesCloseAt ? timestamp(drop.salesCloseAt) : null;
+  if (opens !== null && closes !== null && closes <= opens) throw new RangeError('Orders must close after opening.');
+  if (inventory.totalSold === inventory.capacity) return 'sold_out';
+  if (drop.status === 'sold_out') throw new RangeError('Sold-out status requires confirmed sell-through of the full capacity.');
+  if (drop.status === 'sales_closed' || (closes !== null && closes <= now)) return 'sales_closed';
+  if ((opens !== null && now < opens) || (drop.status === 'upcoming' && opens === null)) return 'upcoming';
+  if (inventory.available <= drop.lowStockThreshold) return 'low_stock';
+  return 'active';
 }
 export const isPurchasable = (status: DropStatus) => status === 'active' || status === 'low_stock';
-export const quantityLimit = (drop: Drop) => Math.max(0, Math.min(drop.maxQuantityPerOrder ?? Infinity, drop.capacity - drop.sold));
+export const quantityLimit = (drop: Drop) => Math.min(drop.maxQuantityPerOrder ?? Infinity, getInventory(drop).available);
 export function validateQuantity(quantity: number, drop: Drop) {
   if (!Number.isInteger(quantity) || quantity < 1) return 'Elegí al menos un drop.';
   if (quantity > quantityLimit(drop)) return `Quedan ${quantityLimit(drop)} drops disponibles. Ajustá la cantidad para continuar.`;

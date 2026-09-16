@@ -6,7 +6,7 @@ async function completeSteps(page: Page, mode: 'pickup' | 'delivery' = 'pickup')
   await page.getByRole('button', { name: 'CONTINUAR', exact: false }).click();
   if (mode === 'pickup') await page.getByText('Lo paso a recoger', { exact: true }).click();
   else { await page.getByLabel('Zona de entrega').selectOption('zone-10'); await page.getByLabel('Dirección', { exact: true }).fill('Dirección de prueba 123, Zona 10'); }
-  await page.getByText('7:00–8:00 PM', { exact: true }).click();
+  await page.getByText('19:00 — 20:00', { exact: true }).click();
   await page.getByRole('button', { name: 'CONTINUAR', exact: false }).click();
   await page.getByLabel('Nombre', { exact: true }).fill('Cliente de prueba');
   await page.getByLabel('WhatsApp / teléfono').fill('+502 5555 1234');
@@ -40,7 +40,7 @@ test('purchase, pickup, receipt, print and sensitive-storage boundary', async ({
   await expect(page).toHaveURL(/success/);
   await expect(page.locator('.receipt-paper')).toContainText('Cliente de prueba');
   await expect(page.locator('.receipt-total')).toContainText('Q350.00');
-  await expect(page.locator('.receipt-window')).toContainText('7:00–8:00 PM');
+  await expect(page.locator('.receipt-window')).toContainText('19:00 — 20:00');
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('.receipt-actions')).toBeHidden();
   await expect(page.locator('.printer-edge')).toBeHidden();
@@ -83,7 +83,7 @@ test('no slots, invalid fields, unknown fee and quantity higher than available a
   await page.getByRole('button', { name: 'CONTINUAR', exact: false }).click();
   await page.getByLabel('Zona de entrega').selectOption('outside');
   await page.getByLabel('Dirección', { exact: true }).fill('Dirección de prueba 123');
-  await page.getByText('7:00–8:00 PM', { exact: true }).click();
+  await page.getByText('19:00 — 20:00', { exact: true }).click();
   await page.getByRole('button', { name: 'CONTINUAR', exact: false }).click();
   await expect(page.locator('.form-error[role=alert]')).toContainText('está por confirmar');
   await page.evaluate(() => sessionStorage.setItem('deipo-selection-v1', JSON.stringify({ quantity: 80, extras: [], fulfillment: 'pickup', slot: '19-20' })));
@@ -145,14 +145,20 @@ for (const width of [390, 1440]) {
           await expect(page.locator('.navigation .stock-state')).toContainText('NEXT DROP');
           await expect(page.locator('.next-chapter')).toBeVisible();
           if (state === 'sold_out') await expect(page.locator('#the-drop')).toContainText('DROP 001 / ARCHIVE');
+          else {
+            await expect(page.locator('.navigation .stock-indicator')).not.toContainText(/013|040|080|SOLD/);
+            await expect(page.locator('#next-drop .opening-information')).toContainText('MARTES 00:00');
+          }
         } else {
           await expect(page.locator('.navigation .stock-state')).toContainText('GET THE DROP');
           await expect(page.locator('.purchase-panel')).toContainText('Q175.00');
           await expect(page.locator('.campaign-aside')).toContainText('80 POR EDICIÓN');
+          if (state === 'active') await expect(page.locator('.navigation .stock-sold')).toHaveText('013');
           const cta = page.locator('.navigation .stock-indicator');
           expect(await cta.evaluate(el => { const r=el.getBoundingClientRect(); return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2) === el || el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)); })).toBe(true);
         }
         await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+        expect(await page.locator('body').innerText()).not.toMatch(/\b\d{1,2}(?::\d{2})?\s*(?:AM|PM)\b/i);
         await page.locator('.box-image').scrollIntoViewIfNeeded();
         await expect(page.locator('.box-image img')).toHaveJSProperty('complete', true);
         await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
@@ -232,4 +238,93 @@ test('preview defaults and Netlify badge clearance keep the mobile action safe',
   await expect(page.locator('.skip-link')).toBeFocused();
   await expect(page.locator('.skip-link')).toHaveCSS('clip-path', 'none');
   expect((await page.locator('.skip-link').boundingBox())!.y).toBeGreaterThanOrEqual(0);
+});
+
+for (const width of [320, 390, 430]) {
+  test(`mobile signal stays usable while compacting and returning at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/?mode=customer-preview');
+    await page.evaluate(() => document.fonts.ready);
+    const nav = page.locator('.navigation');
+    const signal = nav.locator('.stock-indicator');
+    await expect(signal).toContainText('013');
+    await expect(nav).toHaveAttribute('data-signal', 'expanded');
+    await signal.focus();
+    await page.evaluate(() => scrollTo({ top: 400, behavior: 'instant' }));
+    await expect(nav).toHaveAttribute('data-signal', 'compact');
+    await expect(nav).toHaveCSS('height', '72px');
+    await expect(signal).toBeFocused();
+    const navBox = (await nav.boundingBox())!;
+    const signalBox = (await signal.boundingBox())!;
+    const logoBox = (await nav.locator('img').boundingBox())!;
+    expect(navBox.y).toBe(0);
+    expect(signalBox.y).toBeGreaterThanOrEqual(navBox.y);
+    expect(signalBox.y + signalBox.height).toBeLessThanOrEqual(navBox.y + navBox.height);
+    expect(signalBox.x).toBeGreaterThan(logoBox.x + logoBox.width);
+    expect(signalBox.height).toBeGreaterThanOrEqual(44);
+    expect(await signal.evaluate(el => { const r=el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)); })).toBe(true);
+    await page.screenshot({ path: `test-results/v02-signal-compact-${width}.png` });
+    await page.evaluate(() => scrollTo({ top: 180, behavior: 'instant' }));
+    await expect(nav).toHaveAttribute('data-signal', 'compact');
+    await page.evaluate(() => scrollTo({ top: 80, behavior: 'instant' }));
+    await expect(nav).toHaveAttribute('data-signal', 'expanded');
+    await expect(nav).toHaveCSS('height', '128px');
+    await expect(signal).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/checkout\?mode=customer-preview/);
+  });
+}
+
+test('stock movement is bounded and opt-in for preview; customer-preview remains stable', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('/?mode=preview&stock=drift');
+  const sold = page.locator('.navigation .stock-sold');
+  await expect(sold).toHaveText('013');
+  await expect(page.locator('.stock-demo-notice')).toContainText('SIN VENTAS REALES');
+  for (const count of ['014', '016', '018']) { await page.clock.runFor(12000); await expect(sold).toHaveText(count); }
+  await page.clock.runFor(120000);
+  await expect(sold).toHaveText('018');
+  expect(await page.locator('.stock-track > span').evaluate(el => (el as HTMLElement).style.width)).toBe('22.5%');
+  await page.goto('/?mode=customer-preview&stock=drift');
+  await expect(page.locator('.stock-demo-notice, .preview-controls')).toHaveCount(0);
+  await page.clock.runFor(180000);
+  await expect(sold).toHaveText('013');
+  await page.goto('/?mode=preview');
+  await page.clock.runFor(180000);
+  await expect(sold).toHaveText('013');
+  await page.goto('/?mode=preview&stock=drift&state=low_stock');
+  await page.clock.runFor(36000);
+  await expect(sold).toHaveText('079');
+  await expect(page.locator('.navigation .stock-state')).toContainText('QUEDA 1');
+});
+
+test('opening boundary updates homepage and blocks then opens the same checkout', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-09-15T05:59:57Z') });
+  await page.goto('/?mode=customer-preview&opening=demo');
+  await expect(page.locator('h1')).toContainText('COMING SOON');
+  await expect(page.locator('.navigation .stock-indicator')).not.toHaveAttribute('href', /checkout/);
+  await page.clock.runFor(4000);
+  await expect(page.locator('h1')).toHaveText('SUNDAY ROAST');
+  await page.locator('.navigation .stock-indicator').click();
+  await expect(page).toHaveURL(/checkout/);
+  await expect(page.getByRole('button', { name: 'CONTINUAR' })).toBeVisible();
+  await page.clock.setFixedTime(new Date('2026-09-15T05:00:00Z'));
+  await page.goto('/checkout?mode=customer-preview&opening=demo');
+  await expect(page.locator('.checkout-unavailable')).toContainText('COMING SOON');
+});
+
+test('compact closed signal pivots to next opening and respects reduced motion', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?mode=customer-preview&state=sales_closed');
+  await page.locator('.navigation .stock-indicator').focus();
+  await page.evaluate(() => scrollTo({ top: 500, behavior: 'instant' }));
+  const nav = page.locator('.navigation');
+  await expect(nav).toHaveAttribute('data-signal', 'compact');
+  await expect(nav.locator('.stock-opening-short')).toHaveText('MAR 00:00');
+  await expect(nav.locator('.stock-indicator')).not.toContainText(/013|040|080|SOLD/);
+  expect(await nav.evaluate(el => parseFloat(getComputedStyle(el).transitionDuration))).toBeLessThan(.01);
+  await expect(nav.locator('.stock-indicator')).toHaveAttribute('href', '#next-drop');
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: 'test-results/v02-closed-compact-reduced.png' });
 });

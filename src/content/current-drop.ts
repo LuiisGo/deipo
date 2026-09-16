@@ -1,4 +1,5 @@
 import type { Drop, DropStatus } from '@/types/drop';
+const openingReference = { weekday: 2, time: '00:00' };
 
 // DEMO CONTENT — REPLACE WITH REAL BACKEND DATA BEFORE PRODUCTION LAUNCH.
 // 80 units / Friday closing / Saturday fulfillment: approved V0 specification.
@@ -9,8 +10,13 @@ export const currentDrop: Drop = {
   id: 'drop-001', number: '001', slug: 'sunday-roast', name: 'SUNDAY ROAST',
   tagline: 'A CLASSIC, REIMAGINED.',
   description: 'Carne asada lentamente, papas doradas, pan de la casa, jus y crema de mostaza. Un ritual conocido, con algo más que contar.',
-  capacity: 80, sold: 40, status: 'active', price: 175, currency: 'GTQ',
-  salesCloseAt: null, salesCloseLabel: 'FRIDAY AT 11:59 PM',
+  // V0.2 fixture, not evidence of 13 actual business sales. In production these
+  // fields represent confirmed units, configured/audited through DEIPO Admin.
+  capacity: 80, prelaunchSoldUnits: 13, sold: 13, heldUnits: 0,
+  status: 'active', price: 175, currency: 'GTQ',
+  ordersOpenAt: null, openingReference,
+  nextDropOpening: { ordersOpenAt: null, openingReference },
+  salesCloseAt: null, closingReference: { weekday: 5, time: '23:59' },
   fulfillmentDate: null, fulfillmentDay: 'SATURDAY',
   maxQuantityPerOrder: null, lowStockThreshold: 8,
   heroImage: '/drops/drop-001/sunday-roast.webp',
@@ -32,9 +38,9 @@ export const currentDrop: Drop = {
       { id: 'outside', label: 'Otra zona · cobertura por confirmar', fee: null },
     ],
     slots: [
-      { id: '18-19', label: '6:00–7:00 PM', available: true },
-      { id: '19-20', label: '7:00–8:00 PM', available: true },
-      { id: '20-21', label: '8:00–9:00 PM', available: true },
+      { id: '18-19', startsAt: '18:00', endsAt: '19:00', available: true },
+      { id: '19-20', startsAt: '19:00', endsAt: '20:00', available: true },
+      { id: '20-21', startsAt: '20:00', endsAt: '21:00', available: true },
     ],
   },
 };
@@ -45,7 +51,8 @@ export function getPreviewDrop(params: PreviewParams): Drop {
   const status = previewStates.includes(requested as DropStatus) ? requested as DropStatus : currentDrop.status;
   return {
     ...currentDrop, status,
-    sold: status === 'sold_out' ? 80 : status === 'low_stock' ? 74 : status === 'upcoming' ? 0 : currentDrop.sold,
+    sold: status === 'sold_out' ? currentDrop.capacity : status === 'low_stock' ? currentDrop.capacity - 6 : currentDrop.sold,
+    ordersOpenAt: params.opening === 'demo' ? '2026-09-15T00:00:00-06:00' : currentDrop.ordersOpenAt,
     // Fixed example deadline, never a reset-on-load or rolling countdown.
     salesCloseAt: params.clock === 'demo' ? '2026-09-19T05:59:00-00:00' : null,
     heroImage: params.image === 'missing' ? '/missing-demo-image.webp' : currentDrop.heroImage,

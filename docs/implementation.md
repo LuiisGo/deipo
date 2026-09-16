@@ -1,6 +1,12 @@
-# WEB V0 / V0.1 implementation record
+# WEB V0 / V0.1 / V0.2 implementation record
 
-## Current release: WEB V0.1
+## Current release: WEB V0.2
+
+[Drop-system report](drop-system-v02.md): confirmed pre-launch sales contract, a 13/80 mock snapshot, validated sold/held/available projection, central opening/closing logic, 24-hour times, next-drop scheduling references and a mobile signal that compacts into navigation. Optional stock demonstration is explicitly enabled only in preview. Brand assets, packaging, checkout architecture and receipt remain intact. No production backend or real sales were added.
+
+V0.2 verification (2026-09-15): **30/30 browser tests against the production build, 14/14 unit tests, ESLint without warnings, strict TypeScript and production compilation passed.** Automated WCAG A/AA checks cover home, checkout, archive, review, receipt and the compact closed-state signal. Source scans found no emojis or customer-facing AM/PM times. Responsive checks cover 320, 375, 390, 430, 768, 1024, 1280 and 1440px; both modes and all five states are captured at 390/1440. The three mobile transition checks retain keyboard focus and verify header containment and touch targets. Git and live deployment are verified separately at delivery.
+
+## Historical release: WEB V0.1
 
 [Creative-polish report](creative-polish-v01.md): original PNG logos integrated, two safe presentation modes, full SOLD OUT archive, packaging detail progression, deliberate Anton typography, tighter mobile layout and refined checkout/receipt. Business and backend boundaries are unchanged.
 

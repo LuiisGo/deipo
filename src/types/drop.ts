@@ -1,10 +1,23 @@
 export type DropStatus = 'upcoming' | 'active' | 'low_stock' | 'sales_closed' | 'sold_out';
 export type FulfillmentType = 'delivery' | 'pickup';
-export interface Drop {
+// Public sold includes confirmed pre-launch + confirmed online units, never holds.
+export interface InventorySnapshot {
+  capacity: number;
+  prelaunchSoldUnits: number;
+  sold: number;
+  heldUnits: number;
+}
+export interface WeeklyTime { weekday: number; time: string }
+export interface DropOpening {
+  ordersOpenAt: string | null;
+  openingReference: WeeklyTime | null;
+}
+export interface Drop extends InventorySnapshot, DropOpening {
   id: string; number: string; slug: string; name: string; tagline: string;
-  description: string; capacity: number; sold: number; status: DropStatus;
+  description: string; status: DropStatus;
   price: number; currency: 'GTQ'; salesCloseAt: string | null;
-  salesCloseLabel: string; fulfillmentDate: string | null; fulfillmentDay: string;
+  closingReference: WeeklyTime; nextDropOpening: DropOpening | null;
+  fulfillmentDate: string | null; fulfillmentDay: string;
   maxQuantityPerOrder: number | null; lowStockThreshold: number; heroImage: string;
   includes: { name: string; description: string }[];
   extras: { id: string; name: string; price: number }[];
@@ -12,7 +25,7 @@ export interface Drop {
   fulfillment: {
     deliveryEnabled: boolean; pickupEnabled: boolean; pickupLabel: string;
     zones: { id: string; label: string; fee: number | null }[];
-    slots: { id: string; label: string; available: boolean }[];
+    slots: { id: string; startsAt: string; endsAt: string; available: boolean }[];
   };
 }
 export interface Selection { quantity: number; extras: string[]; fulfillment: FulfillmentType; zone: string; slot: string }

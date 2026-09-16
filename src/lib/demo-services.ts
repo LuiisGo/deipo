@@ -1,3 +1,4 @@
+import { formatSlot } from './time';
 import type { Contact, DemoOrder, Drop, Selection } from '@/types/drop';
 import { getDropStatus, isPurchasable, totals, validateFulfillment, validateQuantity } from './drop';
 
@@ -26,7 +27,7 @@ export async function completeDemoCheckout(drop: Drop, selection: Selection, con
     subtotal: price.subtotal, deliveryFee: price.deliveryFee, total: price.total,
     dropName: drop.name, dropNumber: drop.number,
     fulfillmentDay: drop.fulfillmentDate ?? 'Sábado · fecha por confirmar',
-    slotLabel: drop.fulfillment.slots.find(slot => slot.id === selection.slot)!.label,
+    slotLabel: formatSlot(drop.fulfillment.slots.find(slot => slot.id === selection.slot)!),
     items: [{ name: drop.name, quantity: selection.quantity, total: drop.price * selection.quantity },
       ...drop.extras.filter(extra => selection.extras.includes(extra.id)).map(extra => ({ name: extra.name, quantity: 1, total: extra.price }))],
   } };

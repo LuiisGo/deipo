@@ -1,0 +1,7 @@
+import Link from 'next/link';
+import { overview } from '@/lib/deipo/repositories/admin';
+import { utcToGuatemala } from '@/lib/deipo/validation';
+export default async function Drops({searchParams}: {searchParams:Promise<{status?:string}>}) {
+ const {status} = await searchParams; const data = await overview();
+ return <main id="main" className="admin-workspace"><div className="admin-title"><h1>Drops</h1><Link className="admin-button" href="/admin/drops/new">Nuevo drop</Link></div><nav className="admin-filters" aria-label="Filtrar lifecycle">{['all','draft','scheduled','published','archived','cancelled'].map(s=><Link aria-current={(status ?? 'all') === s ? 'page':undefined} key={s} href={`/admin/drops?status=${s}`}>{s}</Link>)}</nav><div className="admin-table-wrap"><table><thead><tr>{['Drop','Nombre','Lifecycle','Apertura GT','Sold','Disponibles','Acciones'].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{data.drops.filter(d=>!status || status==='all' || d.lifecycle_status===status).map(d=>{const i=data.inventory.find(i=>i.drop_id===d.id);return <tr key={d.id}><td>{String(d.number).padStart(3,'0')}</td><td>{d.name}</td><td>{d.lifecycle_status}</td><td>{utcToGuatemala(d.orders_open_at).replace('T',' ') || 'Sin fecha'}</td><td>{i?.total_sold} / {d.capacity}</td><td>{i?.available}</td><td><Link href={`/admin/drops/${d.id}`}>Editar</Link> · <Link href={`/admin/drops/${d.id}/preview`}>Preview</Link></td></tr>;})}</tbody></table></div>{!data.drops.length && <p>Sin drops. Creá el primer borrador con datos confirmados.</p>}</main>;
+}

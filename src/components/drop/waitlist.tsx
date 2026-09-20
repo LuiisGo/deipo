@@ -1,12 +1,14 @@
 'use client';
 import { ArrowIcon } from '@/components/ui/arrow-icon';
-import { PreviewOnly } from '@/components/ui/site-presentation';
+import { PreviewOnly, useSiteMode } from '@/components/ui/site-presentation';
 import { useState } from 'react';
 import { useDrop } from './drop-context';
 import { track } from '@/lib/analytics';
 import { validateContact } from '@/lib/demo-services';
 import { OpeningInformation } from './opening-information';
 export function Waitlist({ early = false }: { early?: boolean }) {
+  const mode=useSiteMode();
+  const live=mode==='production' || mode==='admin-preview';
   const { status, drop } = useDrop();
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -14,7 +16,7 @@ export function Waitlist({ early = false }: { early?: boolean }) {
   if (early !== closed) return null;
   return <section id="next-drop" className={`waitlist-section page-grid ${status === 'sold_out' || status === 'sales_closed' ? 'waitlist-prominent' : ''}`}>
     <div><p className="eyebrow">THERE’S ALWAYS A NEXT CHAPTER</p><h2>SEE YOU<br />NEXT DROP<span className="brand-dot">.</span></h2><p className="body-copy">El próximo drop empieza con vos.</p><OpeningInformation /><PreviewOnly><p className="caption">Formulario de prueba. Tus datos no se guardan ni se envían. Las notificaciones todavía no están activas.</p></PreviewOnly></div>
-    {done ? <div className="waitlist-result" role="status"><span className="eyebrow">PRUEBA COMPLETA</span><p>Aquí empieza<br />el próximo capítulo.</p><span className="caption">Tus datos se validaron y descartaron. No quedaste suscrito a ninguna lista.</span><button className="text-button" onClick={() => setDone(false)}>VOLVER A PROBAR <ArrowIcon /></button></div> :
+    {live ? <p className="caption">{drop.nextDrop ? `DROP ${drop.nextDrop.number} — ${drop.nextDrop.name}. ` : ''}Las notificaciones todavía no están habilitadas.</p> : done ? <div className="waitlist-result" role="status"><span className="eyebrow">PRUEBA COMPLETA</span><p>Aquí empieza<br />el próximo capítulo.</p><span className="caption">Tus datos se validaron y descartaron. No quedaste suscrito a ninguna lista.</span><button className="text-button" onClick={() => setDone(false)}>VOLVER A PROBAR <ArrowIcon /></button></div> :
       <form className="waitlist-form" onSubmit={event => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);

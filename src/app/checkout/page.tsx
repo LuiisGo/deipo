@@ -1,3 +1,4 @@
+import { Unavailable } from '@/components/drop/unavailable';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getPreviewDrop, type PreviewParams } from '@/content/current-drop';
@@ -8,6 +9,7 @@ import { SitePresentation } from '@/components/ui/site-presentation';
 export const metadata: Metadata = { title: 'Tu drop', robots: { index: false, follow: false }, alternates: { canonical: null } };
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<PreviewParams> }) {
   const params = await searchParams;
+  if (getSiteMode(params) === 'production') return <Unavailable />;
   // eslint-disable-next-line react-hooks/purity -- Server request time is serialized once for identical SSR and hydration.
   const initialTime = Date.now();
   return <Suspense><SitePresentation mode={getSiteMode(params)}><DropProvider drop={getPreviewDrop(params)} initialTime={initialTime}><CheckoutShell /></DropProvider></SitePresentation></Suspense>;

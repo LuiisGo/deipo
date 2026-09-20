@@ -1,3 +1,9 @@
+# deipo. / DEIPO OS Sprint 01
+
+Authenticated Admin and Supabase data foundation are implemented on the approved storefront. See [Sprint 01 architecture, setup, verification and release gates](docs/deipo-os-sprint-01.md). Node 22+ is required. `npm run test:admin` exercises the full Admin against isolated fixtures; ordinary storefront regression tests remain `npm run test:e2e`. No real orders or payments are enabled.
+
+The following V0.2 description is retained as historical storefront/preview documentation; its statements about missing Admin/database describe the pre-sprint baseline.
+
 # deipo. / WEB V0.2 — Packaging Reveal Final
 
 An editorial, mobile-first storefront for limited food drops in Guatemala City. Built around **DROP 001 — SUNDAY ROAST** with a warm cream opening, cinematic food photography, restrained stock signal and a thermal receipt experience.
@@ -6,7 +12,7 @@ An editorial, mobile-first storefront for limited food drops in Guatemala City. 
 
 ## Run locally
 
-Requires Node.js 20.9+ (Node 22 recommended).
+Requires Node.js 22+.
 
 ```sh
 npm ci

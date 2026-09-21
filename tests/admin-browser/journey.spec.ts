@@ -24,3 +24,49 @@ test('authenticated founder configures, previews and publishes a drop using isol
 test('authenticated non-admin is denied and production has no demo fallback',async({page,request})=>{await request.get('http://127.0.0.1:54329/reset');await login(page,'reader@example.test');await expect(page.locator('.admin-message[role=alert]')).toContainText('no tiene acceso');await page.goto('/admin');await expect(page).toHaveURL(/\/admin\/login/);await page.goto('/?state=active&mode=preview');await expect(page.getByText('Los pedidos online todavía no están habilitados.')).toBeVisible();await expect(page.getByText('013 / 080')).toHaveCount(0);});
 
 test('public backend failure stays unavailable with no synthetic inventory',async({page,request})=>{await request.get('http://127.0.0.1:54329/fail-public');await page.goto('/?mode=preview&state=low_stock');await expect(page.getByText('TEMPORALMENTE NO DISPONIBLE')).toBeVisible();await expect(page.getByText('013 / 080')).toHaveCount(0);await request.get('http://127.0.0.1:54329/reset');});
+
+test('an already authenticated admin loses access when their profile is deactivated', async ({page, request}) => {
+ await request.get('http://127.0.0.1:54329/reset'); await login(page); await expect(page).toHaveURL(/\/admin$/);
+ await request.get('http://127.0.0.1:54329/deactivate');
+ for (const route of ['/admin', '/admin/drops', '/admin/drops/new', '/admin/drops/00000000-0000-4000-8000-000000000003/preview']) {
+   await page.goto(route); await expect(page).toHaveURL(/\/admin\/login\?error=denied/);
+   await expect(page.getByRole('heading', {name:'Overview'})).toHaveCount(0);
+ }
+ await request.get('http://127.0.0.1:54329/reset');
+});
+
+for (const refreshable of [true, false]) test(`expired access token ${refreshable ? 'refreshes' : 'with revoked refresh token returns to login'}`, async ({page, request, context}) => {
+ await request.get('http://127.0.0.1:54329/reset');
+ const tokenResponse = await request.post('http://127.0.0.1:54329/auth/v1/token', {data:{email:'founder@example.test',password:'fixture-password'}});
+ const session = await tokenResponse.json();
+ const parts = session.access_token.split('.');
+ const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString()); claims.exp = Math.floor(Date.now()/1000)-300;
+ parts[1] = Buffer.from(JSON.stringify(claims)).toString('base64url'); session.access_token = parts.join('.'); session.expires_at = claims.exp;
+ if (!refreshable) session.refresh_token = 'expired';
+ await context.addCookies([{name:'sb-127-auth-token', value:'base64-'+Buffer.from(JSON.stringify(session)).toString('base64url'), domain:'127.0.0.1',path:'/',sameSite:'Lax'}]);
+ const response = await page.goto('/admin');
+ expect(response?.headers()['cache-control']).toContain('no-store');
+ if (refreshable) {
+   await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+   const cookies = await context.cookies(); expect(cookies.some(c=>c.name.startsWith('sb-127-auth-token'))).toBeTruthy();
+   await page.reload(); await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
+ } else {
+   await expect(page).toHaveURL(/\/admin\/login/);
+   expect((await context.cookies()).filter(c=>c.name.startsWith('sb-127-auth-token') && c.value)).toHaveLength(0);
+   await page.goto('/admin/drops'); await expect(page).toHaveURL(/\/admin\/login/);
+ }
+});
+
+test('production proxy refresh emits Secure host-only cookies and private cache headers', async ({request}) => {
+ await request.get('http://127.0.0.1:54329/reset');
+ const tokenResponse = await request.post('http://127.0.0.1:54329/auth/v1/token', {data:{email:'founder@example.test',password:'fixture-password'}});
+ const session = await tokenResponse.json();
+ const parts = session.access_token.split('.'); const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+ claims.exp = Math.floor(Date.now()/1000)-300; parts[1] = Buffer.from(JSON.stringify(claims)).toString('base64url');
+ session.access_token = parts.join('.'); session.expires_at = claims.exp;
+ const response = await request.get('/admin', {headers:{host:'deploy-preview-12--deipo.netlify.app','x-forwarded-proto':'https',cookie:'sb-127-auth-token=base64-'+Buffer.from(JSON.stringify(session)).toString('base64url')},maxRedirects:0});
+ expect(response.status()).toBe(200);
+ const cookies = response.headersArray().filter(h=>h.name.toLowerCase()==='set-cookie'); expect(cookies.length).toBeGreaterThan(0);
+ for (const cookie of cookies) { expect(cookie.value).toMatch(/; secure/i); expect(cookie.value).toMatch(/samesite=lax/i); expect(cookie.value).not.toMatch(/; domain=/i); }
+ expect(response.headers()['cache-control']).toContain('no-store'); expect(response.headers()['pragma']).toBe('no-cache'); expect(response.headers()['expires']).toBe('0');
+});

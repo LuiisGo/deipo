@@ -3,7 +3,7 @@ import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 const founder='00000000-0000-4000-8000-000000000001';
 const nonadmin='00000000-0000-4000-8000-000000000002';
-let rows;let failPublic=false;const reset=()=>{failPublic=false;rows={drops:[],drop_media:[],drop_items:[],drop_slots:[],drop_delivery_zones:[],prelaunch_sales:[],audit_log:[],storefront_config:[{singleton:true,current_drop_id:null,next_drop_id:null}]};};reset();
+let active=true;let rows;let failPublic=false;const reset=()=>{active=true;failPublic=false;rows={drops:[],drop_media:[],drop_items:[],drop_slots:[],drop_delivery_zones:[],prelaunch_sales:[],audit_log:[],storefront_config:[{singleton:true,current_drop_id:null,next_drop_id:null}]};};reset();
 function session(id){const now=Math.floor(Date.now()/1000);const b=x=>Buffer.from(JSON.stringify(x)).toString('base64url');return {access_token:`${b({alg:'HS256',typ:'JWT'})}.${b({sub:id,aud:'authenticated',role:'authenticated',iat:now,exp:now+3600})}.c2lnbmF0dXJl`,refresh_token:id,token_type:'bearer',expires_in:3600,expires_at:now+3600,user:user(id)};}
 function user(id){return {id,aud:'authenticated',role:'authenticated',email:id===founder?'founder@example.test':'reader@example.test',app_metadata:{provider:'email'},user_metadata:{},created_at:new Date().toISOString()};}
 function identity(req){try{return JSON.parse(Buffer.from(req.headers.authorization.split('.')[1],'base64url').toString()).sub;}catch{return null;}}
@@ -18,8 +18,9 @@ const server=http.createServer(async(req,res)=>{
  let body={};try{body=raw?JSON.parse(raw):{};}catch{/* Storage is binary. */}
  const id=identity(req);
  if(url.pathname==='/fail-public'){failPublic=true;return send({});}
+ if(url.pathname==='/deactivate'){active=false;return send({});}
  if(url.pathname==='/reset'){reset();return send({});}
- if(url.pathname.endsWith('/token')){if(body.password&&body.password!=='fixture-password')return send({msg:'Invalid login credentials'},400);return send(session(body.refresh_token || (body.email==='reader@example.test'?nonadmin:founder)));}
+ if(url.pathname.endsWith('/token')){if(body.refresh_token==='expired')return send({code:'refresh_token_not_found',msg:'Refresh token revoked'},400);if(body.password&&body.password!=='fixture-password')return send({msg:'Invalid login credentials'},400);return send(session(body.refresh_token || (body.email==='reader@example.test'?nonadmin:founder)));}
  if(url.pathname.endsWith('/user'))return id?send(user(id)):send({msg:'Unauthorized'},401);
  if(url.pathname.endsWith('/logout'))return send({});
  if(url.pathname.includes('/.well-known/'))return send({keys:[]});
@@ -34,7 +35,7 @@ const server=http.createServer(async(req,res)=>{
   if(rpc==='publish_drop'){d.lifecycle_status='published';audit('drop_published',d.id);return send(null);}
   if(rpc==='set_storefront_drop'){rows.storefront_config[0][`${body.p_slot}_drop_id`]=body.p_drop_id;audit(`storefront_${body.p_slot}_changed`,body.p_drop_id);return send(null);}
  }
- const table=url.pathname.split('/').at(-1);let list=table==='admin_profiles'?(id===founder?[{user_id:founder,role:'founder',is_active:true}]:[]):table==='drop_inventory'?rows.drops.map(inventory):rows[table];
+ const table=url.pathname.split('/').at(-1);let list=table==='admin_profiles'?(id===founder?[{user_id:founder,role:'founder',is_active:active}]:[]):table==='drop_inventory'?rows.drops.map(inventory):rows[table];
  if(!list)return send({message:'Unknown fixture endpoint'},404);
  if(req.method==='GET'){
   for(const [key,value] of url.searchParams)if(value.startsWith('eq.'))list=list.filter(r=>String(r[key])===value.slice(3));

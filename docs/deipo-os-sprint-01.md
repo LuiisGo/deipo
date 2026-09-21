@@ -1,5 +1,7 @@
 # DEIPO OS — Sprint 01
 
+Final acceptance follow-up (2026-09-20): see [controlled Deploy Preview checklist](sprint-01-deploy-preview.md) for current live data, storage/auth verification, Netlify configuration and remaining human acceptance gates. The empty-database snapshot below is historical, not the current data state.
+
 Implementation on the existing storefront baseline `18bcedd72569817aa3d1dc1865d49964f96d38a7`, branch `feat/deipo-os-sprint-01`. No new app, site, repository or Supabase project. The approved public visual system and PackagingReveal remain in place.
 
 ## Runtime and environment
@@ -92,5 +94,7 @@ No remote code push, Netlify deployment or new site configuration is part of thi
 The isolated image fixture intentionally contains test bytes and a localhost asset endpoint. Next Image's private-IP safeguard stays enabled; its expected rejection exercises image fallback. It is not evidence of a real Supabase file upload or physical packaging imagery. The separate storefront suite exercises the approved real local packaging images.
 
 ## Next sprint
+
+Deferred explicitly by the owner on 2026-09-20: do not start Sprint 02 during Sprint 01 acceptance.
 
 Sprint 02: server-authoritative orders/order items and expiring inventory holds, transactional capacity checks, concurrency/idempotency tests and an explicit temporarily-held availability state. Recurrente and verified payment webhooks belong to Sprint 03. CRM, kitchen, WhatsApp, analytics and automations remain deferred.

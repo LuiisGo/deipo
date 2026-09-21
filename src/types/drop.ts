@@ -13,6 +13,7 @@ export interface DropOpening {
   openingReference: WeeklyTime | null;
 }
 export interface Drop extends InventorySnapshot, DropOpening {
+  source?: 'production' | 'admin-preview'; heroAlt?: string; nextDrop?: {number:string;name:string};
   id: string; number: string; slug: string; name: string; tagline: string;
   description: string; status: DropStatus;
   price: number; currency: 'GTQ'; salesCloseAt: string | null;

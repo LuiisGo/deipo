@@ -11,5 +11,7 @@ export function PreviewOnly({ children, otherwise = null }: { children: ReactNod
   return useSiteMode() === 'preview' ? children : otherwise;
 }
 export function PresentationNotice() {
+  const mode = useSiteMode();
+  if (mode === 'production' || mode === 'admin-preview') return <div className="presentation-notice">{mode === 'admin-preview' ? 'PREVIEW AUTENTICADO · ' : ''}PEDIDOS ONLINE NO HABILITADOS</div>;
   return <PreviewOnly otherwise={<div className="presentation-notice">PRESENTACIÓN INTERNA <span>·</span> PEDIDOS NO HABILITADOS</div>}><div className="demo-banner"><span>VISTA PREVIA</span> — STOCK DE PRUEBA · PRECIO ESTIMADO · SIN PEDIDOS REALES</div></PreviewOnly>;
 }

@@ -13,7 +13,10 @@ import { formatOpening, formatWeeklyTime, openingFor } from '@/lib/time';
 
 export function usePreviewHref(path: string) {
   const params = useSearchParams();
+  const mode = useSiteMode();
   const next = new URLSearchParams();
+  if (mode === 'admin-preview') return '#next-drop';
+  if (mode === 'production') return '/checkout';
   for (const key of ['state', 'clock', 'opening', 'slots', 'payment', 'mode', 'image']) if (params.get(key)) next.set(key, params.get(key)!);
   return `${path}${next.size ? `?${next}` : ''}`;
 }
@@ -83,6 +86,7 @@ export function Extras({ drop }: { drop: Drop }) {
 export function PurchaseControls() {
   const { drop, status } = useDrop();
   if (!isPurchasable(status)) return null;
+  if (drop.source) return <p className="caption purchase-note">Pedidos online todavía no habilitados.</p>;
   if (quantityLimit(drop) === 0) return <p className="caption">No hay unidades disponibles en este momento.</p>;
   return <><div className="quantity-row"><span className="eyebrow">CANTIDAD</span><QuantityControl drop={drop} /></div>{drop.extras.length > 0 && <Extras drop={drop} />}<DropCTA /><PreviewOnly><p className="caption purchase-note">Checkout de prueba. Sin cobro. Sin reserva.</p></PreviewOnly></>;
 }

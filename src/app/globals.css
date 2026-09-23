@@ -563,3 +563,16 @@ input::placeholder { color: #777069; opacity: 1; }
   .receipt-good { margin-bottom: 20px; }
   .receipt-paper > * { break-inside: avoid; }
 }
+
+/* Sprint 02 checkout follows the existing editorial layout and form vocabulary. */
+.live-checkout { min-height: 100svh; background: var(--cream, #F5F1E8); color: #121212; }
+.live-checkout .checkout-header { display:flex; justify-content:space-between; align-items:center; padding:24px clamp(20px,6vw,80px); border-bottom:1px solid #12121230; }
+.live-checkout .checkout-header img { width:100px; height:auto; }
+.live-checkout-main { max-width:740px; margin:auto; padding:60px 24px 100px; }
+.live-checkout-main h1 { font-size:clamp(48px,9vw,88px); margin:20px 0 40px; }
+.live-order-summary { border-block:1px solid #12121230; padding:24px 0; margin:32px 0; }
+.live-checkout-main p { margin-block:16px; }
+.live-checkout-main label { display:grid; gap:8px; margin-block:20px; font-size:14px; }
+.live-checkout-main input,.live-checkout-main select,.live-checkout-main textarea { width:100%; min-height:48px; padding:12px; border:1px solid #12121280; border-radius:0; background:transparent; font:inherit; }
+.live-checkout-main fieldset { border:0; padding:0; min-width:0; }
+.live-checkout-main .text-link { margin-top:32px; min-height:44px; }

@@ -292,8 +292,10 @@ export type Database = {
           id: string
           lifecycle_status: Database["public"]["Enums"]["drop_lifecycle_status"]
           low_stock_threshold: number
+          max_quantity_per_order: number | null
           name: string
           number: number
+          online_ordering_enabled: boolean
           orders_close_at: string | null
           orders_open_at: string | null
           pickup_enabled: boolean
@@ -318,8 +320,10 @@ export type Database = {
           id?: string
           lifecycle_status?: Database["public"]["Enums"]["drop_lifecycle_status"]
           low_stock_threshold?: number
+          max_quantity_per_order?: number | null
           name: string
           number: number
+          online_ordering_enabled?: boolean
           orders_close_at?: string | null
           orders_open_at?: string | null
           pickup_enabled?: boolean
@@ -344,8 +348,10 @@ export type Database = {
           id?: string
           lifecycle_status?: Database["public"]["Enums"]["drop_lifecycle_status"]
           low_stock_threshold?: number
+          max_quantity_per_order?: number | null
           name?: string
           number?: number
+          online_ordering_enabled?: boolean
           orders_close_at?: string | null
           orders_open_at?: string | null
           pickup_enabled?: boolean
@@ -358,6 +364,285 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      inventory_holds: {
+        Row: {
+          checkout_session_hash: string
+          converted_at: string | null
+          created_at: string
+          drop_id: string
+          expires_at: string
+          id: string
+          quantity: number
+          released_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          checkout_session_hash: string
+          converted_at?: string | null
+          created_at?: string
+          drop_id: string
+          expires_at: string
+          id?: string
+          quantity: number
+          released_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          checkout_session_hash?: string
+          converted_at?: string | null
+          created_at?: string
+          drop_id?: string
+          expires_at?: string
+          id?: string
+          quantity?: number
+          released_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_holds_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drop_inventory"
+            referencedColumns: ["drop_id"]
+          },
+          {
+            foreignKeyName: "inventory_holds_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_events: {
+        Row: {
+          actor_kind: string
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: number
+          metadata: Json
+          order_id: string
+        }
+        Insert: {
+          actor_kind: string
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: never
+          metadata?: Json
+          order_id: string
+        }
+        Update: {
+          actor_kind?: string
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: never
+          metadata?: Json
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "admin_order_state"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          drop_id: string
+          id: string
+          line_total_minor: number | null
+          order_id: string
+          quantity: number
+          snapshot_drop_number: number
+          snapshot_name: string
+          unit_price_minor: number
+        }
+        Insert: {
+          created_at?: string
+          drop_id: string
+          id?: string
+          line_total_minor?: number | null
+          order_id: string
+          quantity: number
+          snapshot_drop_number: number
+          snapshot_name: string
+          unit_price_minor: number
+        }
+        Update: {
+          created_at?: string
+          drop_id?: string
+          id?: string
+          line_total_minor?: number | null
+          order_id?: string
+          quantity?: number
+          snapshot_drop_number?: number
+          snapshot_name?: string
+          unit_price_minor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drop_inventory"
+            referencedColumns: ["drop_id"]
+          },
+          {
+            foreignKeyName: "order_items_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "admin_order_state"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          currency: string
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_address: string | null
+          delivery_fee_minor: number
+          delivery_notes: string | null
+          delivery_zone_id: string | null
+          delivery_zone_label: string | null
+          fulfillment_date: string
+          fulfillment_method: string
+          hold_id: string
+          id: string
+          inventory_committed_at: string | null
+          inventory_released_at: string | null
+          order_code: string
+          paid_at: string | null
+          pickup_label: string | null
+          slot_end: string | null
+          slot_id: string | null
+          slot_start: string | null
+          status: string
+          subtotal_minor: number
+          total_minor: number | null
+          updated_at: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          currency: string
+          customer_email?: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_address?: string | null
+          delivery_fee_minor: number
+          delivery_notes?: string | null
+          delivery_zone_id?: string | null
+          delivery_zone_label?: string | null
+          fulfillment_date: string
+          fulfillment_method: string
+          hold_id: string
+          id?: string
+          inventory_committed_at?: string | null
+          inventory_released_at?: string | null
+          order_code?: string
+          paid_at?: string | null
+          pickup_label?: string | null
+          slot_end?: string | null
+          slot_id?: string | null
+          slot_start?: string | null
+          status?: string
+          subtotal_minor: number
+          total_minor?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivery_address?: string | null
+          delivery_fee_minor?: number
+          delivery_notes?: string | null
+          delivery_zone_id?: string | null
+          delivery_zone_label?: string | null
+          fulfillment_date?: string
+          fulfillment_method?: string
+          hold_id?: string
+          id?: string
+          inventory_committed_at?: string | null
+          inventory_released_at?: string | null
+          order_code?: string
+          paid_at?: string | null
+          pickup_label?: string | null
+          slot_end?: string | null
+          slot_id?: string | null
+          slot_start?: string | null
+          status?: string
+          subtotal_minor?: number
+          total_minor?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_delivery_zone_id_fkey"
+            columns: ["delivery_zone_id"]
+            isOneToOne: false
+            referencedRelation: "drop_delivery_zones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_hold_id_fkey"
+            columns: ["hold_id"]
+            isOneToOne: true
+            referencedRelation: "inventory_holds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "drop_slots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prelaunch_sales: {
         Row: {
@@ -419,6 +704,7 @@ export type Database = {
       storefront_config: {
         Row: {
           current_drop_id: string | null
+          hold_ttl_seconds: number
           next_drop_id: string | null
           singleton: boolean
           updated_at: string
@@ -426,6 +712,7 @@ export type Database = {
         }
         Insert: {
           current_drop_id?: string | null
+          hold_ttl_seconds?: number
           next_drop_id?: string | null
           singleton?: boolean
           updated_at?: string
@@ -433,6 +720,7 @@ export type Database = {
         }
         Update: {
           current_drop_id?: string | null
+          hold_ttl_seconds?: number
           next_drop_id?: string | null
           singleton?: boolean
           updated_at?: string
@@ -471,6 +759,80 @@ export type Database = {
       }
     }
     Views: {
+      admin_order_state: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          created_at: string | null
+          currency: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_address: string | null
+          delivery_fee_minor: number | null
+          delivery_notes: string | null
+          delivery_zone_id: string | null
+          delivery_zone_label: string | null
+          drop_id: string | null
+          effective_status: string | null
+          expires_at: string | null
+          fulfillment_date: string | null
+          fulfillment_method: string | null
+          hold_id: string | null
+          hold_status: string | null
+          id: string | null
+          inventory_committed_at: string | null
+          inventory_released_at: string | null
+          order_code: string | null
+          paid_at: string | null
+          pickup_label: string | null
+          quantity: number | null
+          slot_end: string | null
+          slot_id: string | null
+          slot_start: string | null
+          status: string | null
+          subtotal_minor: number | null
+          total_minor: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_holds_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drop_inventory"
+            referencedColumns: ["drop_id"]
+          },
+          {
+            foreignKeyName: "inventory_holds_drop_id_fkey"
+            columns: ["drop_id"]
+            isOneToOne: false
+            referencedRelation: "drops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_zone_id_fkey"
+            columns: ["delivery_zone_id"]
+            isOneToOne: false
+            referencedRelation: "drop_delivery_zones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_hold_id_fkey"
+            columns: ["hold_id"]
+            isOneToOne: true
+            referencedRelation: "inventory_holds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "drop_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drop_inventory: {
         Row: {
           available: number | null
@@ -486,6 +848,30 @@ export type Database = {
       }
     }
     Functions: {
+      admin_cancel_pending_order: {
+        Args: { p_order_id: string; p_reason: string }
+        Returns: undefined
+      }
+      cancel_pending_order: {
+        Args: { p_checkout_session_hash: string }
+        Returns: Json
+      }
+      create_inventory_hold: {
+        Args: {
+          p_checkout_session_hash: string
+          p_drop_id: string
+          p_quantity: number
+        }
+        Returns: Json
+      }
+      create_pending_order_from_hold: {
+        Args: { p_checkout_session_hash: string; p_details: Json }
+        Returns: Json
+      }
+      get_checkout_state: {
+        Args: { p_checkout_session_hash: string }
+        Returns: Json
+      }
       get_storefront_state: { Args: never; Returns: Json }
       publish_drop: { Args: { p_drop_id: string }; Returns: undefined }
       record_prelaunch_sale: {
@@ -497,6 +883,10 @@ export type Database = {
           p_source: string
         }
         Returns: string
+      }
+      release_inventory_hold: {
+        Args: { p_checkout_session_hash: string }
+        Returns: Json
       }
       set_storefront_drop: {
         Args: { p_drop_id: string; p_slot: string }
@@ -515,6 +905,7 @@ export type Database = {
         | "low_stock"
         | "sales_closed"
         | "sold_out"
+        | "temporarily_unavailable"
       drop_item_type: "included" | "extra"
       drop_lifecycle_status:
         | "draft"
@@ -657,6 +1048,7 @@ export const Constants = {
         "low_stock",
         "sales_closed",
         "sold_out",
+        "temporarily_unavailable",
       ],
       drop_item_type: ["included", "extra"],
       drop_lifecycle_status: [

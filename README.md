@@ -1,3 +1,9 @@
+# deipo. / DEIPO OS Sprint 02
+
+Orders and inventory holds are implemented locally, with forward migrations applied to the existing Supabase project. Public ordering stays disabled. See [Sprint 02 architecture, evidence and Sprint 03 handoff](docs/deipo-os-sprint-02.md). No payment integration or new application deployment is included.
+
+The Sprint 01 and WEB V0 sections below preserve their historical context.
+
 # deipo. / DEIPO OS Sprint 01
 
 Authenticated Admin and Supabase data foundation are implemented on the approved storefront. See [Sprint 01 architecture, setup, verification and release gates](docs/deipo-os-sprint-01.md). Node 22+ is required. `npm run test:admin` exercises the full Admin against isolated fixtures; ordinary storefront regression tests remain `npm run test:e2e`. No real orders or payments are enabled.

@@ -64,9 +64,46 @@ test('production proxy refresh emits Secure host-only cookies and private cache 
  const parts = session.access_token.split('.'); const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
  claims.exp = Math.floor(Date.now()/1000)-300; parts[1] = Buffer.from(JSON.stringify(claims)).toString('base64url');
  session.access_token = parts.join('.'); session.expires_at = claims.exp;
- const response = await request.get('/admin', {headers:{host:'deploy-preview-12--deipo.netlify.app','x-forwarded-proto':'https',cookie:'sb-127-auth-token=base64-'+Buffer.from(JSON.stringify(session)).toString('base64url')},maxRedirects:0});
+ const response = await request.get('/admin', {headers:{host:'bydeipo.com','x-forwarded-proto':'https',cookie:'sb-127-auth-token=base64-'+Buffer.from(JSON.stringify(session)).toString('base64url')},maxRedirects:0});
  expect(response.status()).toBe(200);
- const cookies = response.headersArray().filter(h=>h.name.toLowerCase()==='set-cookie'); expect(cookies.length).toBeGreaterThan(0);
+ const cookies = response.headersArray().filter(h=>h.name.toLowerCase()==='set-cookie'); expect(cookies.some(c=>c.value.startsWith('deipo_checkout_session='))).toBe(true); expect(cookies.some(c=>c.value.startsWith('sb-127-auth-token='))).toBe(true);
  for (const cookie of cookies) { expect(cookie.value).toMatch(/; secure/i); expect(cookie.value).toMatch(/samesite=lax/i); expect(cookie.value).not.toMatch(/; domain=/i); }
  expect(response.headers()['cache-control']).toContain('no-store'); expect(response.headers()['pragma']).toBe('no-cache'); expect(response.headers()['expires']).toBe('0');
+});
+
+
+test('fresh direct login establishes an independent checkout session through login and logout', async ({page, context, request}) => {
+ await request.get('http://127.0.0.1:54329/reset');
+ expect(await context.cookies()).toEqual([]);
+ const response = await page.goto('/admin/login');
+ expect(response?.status()).toBe(200);
+ await expect(page.getByRole('heading', {name:'Iniciar sesión'})).toBeVisible();
+ const checkout = (await context.cookies()).find(c => c.name === 'deipo_checkout_session')!;
+ expect(checkout.value).toMatch(/^[a-f0-9]{64}$/);
+ expect(checkout).toMatchObject({httpOnly:true, secure:false, sameSite:'Lax', path:'/', domain:'127.0.0.1'});
+ expect(await page.evaluate(() => document.cookie)).not.toContain('deipo_checkout_session');
+ for (const path of ['/admin', '/admin/orders', '/admin/drops']) {
+   await page.goto(path); await expect(page).toHaveURL(/\/admin\/login/);
+ }
+ await login(page); await expect(page).toHaveURL(/\/admin$/);
+ const authenticated = await context.cookies();
+ expect(authenticated.some(c => c.name.startsWith('sb-127-auth-token'))).toBe(true);
+ expect(authenticated.find(c => c.name === checkout.name)?.value).toBe(checkout.value);
+ await page.getByRole('button', {name:'Cerrar sesión'}).click();
+ await expect(page).toHaveURL(/\/admin\/login/);
+ const loggedOut = await context.cookies();
+ expect(loggedOut.filter(c => c.name.startsWith('sb-127-auth-token'))).toHaveLength(0);
+ expect(loggedOut.find(c => c.name === checkout.name)?.value).toBe(checkout.value);
+ await page.goto('/admin'); await expect(page).toHaveURL(/\/admin\/login/);
+});
+
+test('fresh custom-domain login returns a Secure host-only checkout cookie', async ({request}) => {
+ const response = await request.get('/admin/login', {headers:{host:'bydeipo.com', 'x-forwarded-proto':'https', cookie:''}, maxRedirects:0});
+ expect(response.status()).toBe(200);
+ expect(await response.text()).toContain('Iniciar sesión');
+ const cookie = response.headersArray().find(h => h.name.toLowerCase() === 'set-cookie' && h.value.startsWith('deipo_checkout_session='))?.value;
+ expect(cookie).toMatch(/^deipo_checkout_session=[a-f0-9]{64};/);
+ expect(cookie).toMatch(/; HttpOnly/i); expect(cookie).toMatch(/; Secure/i);
+ expect(cookie).toMatch(/; SameSite=Lax/i); expect(cookie).toMatch(/; Path=\//i);
+ expect(cookie).not.toMatch(/; Domain=/i);
 });

@@ -1,4 +1,4 @@
-export type DropStatus = 'upcoming' | 'active' | 'low_stock' | 'sales_closed' | 'sold_out';
+export type DropStatus = 'upcoming' | 'active' | 'low_stock' | 'sales_closed' | 'sold_out' | 'temporarily_unavailable';
 export type FulfillmentType = 'delivery' | 'pickup';
 // Public sold includes confirmed pre-launch + confirmed online units, never holds.
 export interface InventorySnapshot {
@@ -13,6 +13,7 @@ export interface DropOpening {
   openingReference: WeeklyTime | null;
 }
 export interface Drop extends InventorySnapshot, DropOpening {
+  onlineOrderingEnabled?: boolean;
   source?: 'production' | 'admin-preview'; heroAlt?: string; nextDrop?: {number:string;name:string};
   id: string; number: string; slug: string; name: string; tagline: string;
   description: string; status: DropStatus;

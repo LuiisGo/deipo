@@ -19,6 +19,7 @@ export function DropSectionLabel() {
 export function ArchiveNote() {
   const { drop, status } = useDrop();
   if (isPurchasable(status)) return null;
+  if(status==='temporarily_unavailable')return <aside className="archive-note"><span className="eyebrow">CURRENTLY RESERVED.</span><p className="body-copy">Las unidades disponibles están reservadas temporalmente. Algunas podrían volver a estar disponibles pronto.</p></aside>;
   return <aside className="archive-note">
     <span className="eyebrow">{status === 'sold_out' ? 'LIMITED BY DESIGN.' : status === 'sales_closed' ? 'EL SIGUIENTE PASO ES EN LA COCINA.' : 'SOMETHING GOOD IS COMING.'}</span>
     <p className="archive-number">{status === 'sold_out' ? <>{pad(drop.capacity)}<span> / {pad(drop.capacity)}</span></> : status === 'sales_closed' ? 'NOW, WE COOK.' : 'WORTH THE WAIT.'}</p>

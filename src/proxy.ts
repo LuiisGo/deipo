@@ -1,8 +1,16 @@
+import { checkoutCookieName,checkoutCookieOptions,newCheckoutToken,validCheckoutToken } from '@/lib/deipo/checkout-session';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { supabaseConfig } from '@/lib/supabase/config';
 import { authCookieOptions } from '@/lib/supabase/cookie-options';
 export async function proxy(request: NextRequest) {
+  if(!request.nextUrl.pathname.startsWith('/admin')){
+    let token=request.cookies.get(checkoutCookieName)?.value;
+    if(!validCheckoutToken(token)){token=newCheckoutToken();request.cookies.set(checkoutCookieName,token);}
+    const response=NextResponse.next({request});
+    response.cookies.set(checkoutCookieName,token,checkoutCookieOptions(request.headers.get('host')));
+    response.headers.set('Cache-Control','private, no-store');return response;
+  }
   let response = NextResponse.next({ request });
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     const { url, key } = supabaseConfig();
@@ -22,4 +30,4 @@ export async function proxy(request: NextRequest) {
   response.headers.set('Expires', '0');
   return response;
 }
-export const config = { matcher: ['/admin/:path*'] };
+export const config = { matcher: ['/admin/:path*','/','/checkout'] };

@@ -1,4 +1,5 @@
 'use server';
+import { checkoutError } from '@/lib/deipo/checkout';
 import { redirect, unstable_rethrow } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { serverClient } from '@/lib/supabase/server';
@@ -43,4 +44,7 @@ export async function updateDrop(id: string, operation: string, _: ActionState, 
 export async function refreshMedia(id: string) {
   await requireWriter();
   revalidatePath(`/admin/drops/${id}`); revalidatePath('/admin'); revalidatePath('/');
+}
+export async function cancelAdminOrder(id:string,_:ActionState,form:FormData):Promise<ActionState>{
+ try{const {client}=await requireWriter();const result=await client.rpc('admin_cancel_pending_order',{p_order_id:id,p_reason:text(form,'reason')});if(result.error)throw result.error;revalidatePath('/admin','layout');revalidatePath('/');return {success:'Estado actualizado. Revisá el pedido y su reserva.'};}catch(error){unstable_rethrow(error);return {error:checkoutError(error)};}
 }

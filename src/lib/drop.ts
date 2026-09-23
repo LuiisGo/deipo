@@ -12,6 +12,7 @@ export function getDropStatus(drop: Drop, now = Date.now()): DropStatus {
   if (drop.status === 'sold_out') throw new RangeError('Sold-out status requires confirmed sell-through of the full capacity.');
   if (drop.status === 'sales_closed' || (closes !== null && closes <= now)) return 'sales_closed';
   if ((opens !== null && now < opens) || (drop.status === 'upcoming' && opens === null)) return 'upcoming';
+  if (inventory.available === 0 && inventory.heldUnits > 0) return 'temporarily_unavailable';
   if (inventory.available <= drop.lowStockThreshold) return 'low_stock';
   return 'active';
 }

@@ -8,6 +8,7 @@ import { useOrder } from '@/components/checkout/order-context';
 import { isPurchasable, pad, quantityLimit, money } from '@/lib/drop';
 import { track } from '@/lib/analytics';
 import { PreviewOnly, useSiteMode } from '@/components/ui/site-presentation';
+import { ReserveButton } from '@/components/checkout/reserve-button';
 import type { Drop } from '@/types/drop';
 import { formatOpening, formatWeeklyTime, openingFor } from '@/lib/time';
 
@@ -16,7 +17,7 @@ export function usePreviewHref(path: string) {
   const mode = useSiteMode();
   const next = new URLSearchParams();
   if (mode === 'admin-preview') return '#next-drop';
-  if (mode === 'production') return '/checkout';
+  if (mode === 'production') return '#the-drop';
   for (const key of ['state', 'clock', 'opening', 'slots', 'payment', 'mode', 'image']) if (params.get(key)) next.set(key, params.get(key)!);
   return `${path}${next.size ? `?${next}` : ''}`;
 }
@@ -27,11 +28,11 @@ export function LiveStockIndicator({ inline = false }: { inline?: boolean }) {
   const mode = useSiteMode();
   const opening = openingFor(drop, status);
   const showCount = available || status === 'sold_out';
-  const label = status === 'sold_out' ? 'SOLD OUT' : status === 'sales_closed' ? 'ORDERS CLOSED' : status === 'upcoming' ? 'NEXT DROP' : status === 'low_stock' ? `${inventory.available === 1 ? 'QUEDA' : 'QUEDAN'} ${inventory.available}` : 'GET THE DROP';
-  const context = showCount ? `${inventory.totalSold} de ${inventory.capacity} vendidos` : `${label}. Apertura ${formatOpening(opening)}${opening?.ordersOpenAt ? '' : ', fecha por confirmar'}`;
-  return <Link href={available ? href : '#next-drop'} className={`stock-indicator ${inline ? 'stock-inline' : ''}`} data-stock-status={status} aria-label={`${context}. ${mode === 'preview' ? 'Stock de prueba. ' : ''}${available ? 'Ir al checkout de prueba' : 'Próximo drop'}`}>
-    <span className="stock-state"><i aria-hidden="true" />{available && status === 'low_stock' && <span className="low-stock-label">{label}</span>}<span className="stock-action">{available ? <>GET <span className="stock-full-word">THE </span>DROP</> : 'NEXT DROP'}</span></span>
-    <span className="stock-count" aria-live={inline ? undefined : 'polite'} aria-atomic="true">{showCount ? <><span className="stock-sold" key={inventory.totalSold}>{pad(inventory.totalSold)}</span> <span>/ {pad(inventory.capacity)}</span><span className="stock-full-word"> SOLD</span></> : <><span className="stock-opening-full">{status === 'sales_closed' ? 'ORDERS CLOSED' : formatOpening(opening)}</span><span className="stock-opening-short">{formatOpening(opening, true)}</span></>}<PreviewOnly><small>DEMO</small></PreviewOnly></span>
+  const label = status === 'temporarily_unavailable' ? 'CURRENTLY RESERVED' : status === 'sold_out' ? 'SOLD OUT' : status === 'sales_closed' ? 'ORDERS CLOSED' : status === 'upcoming' ? 'NEXT DROP' : status === 'low_stock' ? `${inventory.available === 1 ? 'QUEDA' : 'QUEDAN'} ${inventory.available}` : 'GET THE DROP';
+  const context = status==='temporarily_unavailable'?'Unidades reservadas temporalmente':showCount ? `${inventory.totalSold} de ${inventory.capacity} vendidos` : `${label}. Apertura ${formatOpening(opening)}${opening?.ordersOpenAt ? '' : ', fecha por confirmar'}`;
+  return <Link href={status==='temporarily_unavailable'?'#the-drop':available ? href : '#next-drop'} className={`stock-indicator ${inline ? 'stock-inline' : ''}`} data-stock-status={status} aria-label={`${context}. ${mode === 'preview' ? 'Stock de prueba. ' : ''}${available ? (mode==='production'?'Elegir cantidad':'Ir al checkout de prueba') : status==='temporarily_unavailable'?'Consultar disponibilidad':'Próximo drop'}`}>
+    <span className="stock-state"><i aria-hidden="true" />{available && status === 'low_stock' && <span className="low-stock-label">{label}</span>}<span className="stock-action">{available ? <>GET <span className="stock-full-word">THE </span>DROP</> : status==='temporarily_unavailable'?'RESERVED':'NEXT DROP'}</span></span>
+    <span className="stock-count" aria-live={inline ? undefined : 'polite'} aria-atomic="true">{showCount ? <><span className="stock-sold" key={inventory.totalSold}>{pad(inventory.totalSold)}</span> <span>/ {pad(inventory.capacity)}</span><span className="stock-full-word"> SOLD</span></> : <><span className="stock-opening-full">{status==='temporarily_unavailable'?'CURRENTLY RESERVED':status === 'sales_closed' ? 'ORDERS CLOSED' : formatOpening(opening)}</span><span className="stock-opening-short">{status==='temporarily_unavailable'?'RESERVED':formatOpening(opening, true)}</span></>}<PreviewOnly><small>DEMO</small></PreviewOnly></span>
     <span className="stock-arrow" aria-hidden="true"><ArrowIcon /></span>
   </Link>;
 }
@@ -67,14 +68,15 @@ export function DropCTA({ className = '', children }: { className?: string; chil
 export function QuantityControl({ drop }: { drop: Drop }) {
   const { selection, setSelection } = useOrder();
   const max = quantityLimit(drop);
+  const quantity=Math.max(1,Math.min(selection.quantity,max));
   function update(quantity: number) {
     setSelection({ ...selection, quantity });
     track('select_quantity', { drop_id: drop.id, quantity });
   }
   return <div className="quantity-control" role="group" aria-label="Cantidad de drops">
-    <button type="button" aria-label="Reducir cantidad" disabled={selection.quantity <= 1} onClick={() => update(selection.quantity - 1)}>−</button>
-    <output aria-label="Cantidad" aria-live="polite">{selection.quantity}</output>
-    <button type="button" aria-label="Aumentar cantidad" disabled={selection.quantity >= max} onClick={() => update(selection.quantity + 1)}>+</button>
+    <button type="button" aria-label="Reducir cantidad" disabled={quantity <= 1} onClick={() => update(quantity - 1)}>−</button>
+    <output aria-label="Cantidad" aria-live="polite">{quantity}</output>
+    <button type="button" aria-label="Aumentar cantidad" disabled={quantity >= max} onClick={() => update(quantity + 1)}>+</button>
   </div>;
 }
 export function Extras({ drop }: { drop: Drop }) {
@@ -85,8 +87,9 @@ export function Extras({ drop }: { drop: Drop }) {
 }
 export function PurchaseControls() {
   const { drop, status } = useDrop();
+  if (status==='temporarily_unavailable') return <p role="status" className="body-copy">Actualmente reservado. Algunas unidades podrían volver a estar disponibles pronto.</p>;
   if (!isPurchasable(status)) return null;
-  if (drop.source) return <p className="caption purchase-note">Pedidos online todavía no habilitados.</p>;
+  if (drop.source==='admin-preview'||(drop.source==='production'&&!drop.onlineOrderingEnabled)) return <p className="caption purchase-note">Pedidos online todavía no habilitados.</p>;
   if (quantityLimit(drop) === 0) return <p className="caption">No hay unidades disponibles en este momento.</p>;
-  return <><div className="quantity-row"><span className="eyebrow">CANTIDAD</span><QuantityControl drop={drop} /></div>{drop.extras.length > 0 && <Extras drop={drop} />}<DropCTA /><PreviewOnly><p className="caption purchase-note">Checkout de prueba. Sin cobro. Sin reserva.</p></PreviewOnly></>;
+  return <><div className="quantity-row"><span className="eyebrow">CANTIDAD</span><QuantityControl drop={drop} /></div>{drop.extras.length > 0 && <Extras drop={drop} />}{drop.source==='production'?<ReserveButton drop={drop} />:<DropCTA />}<PreviewOnly><p className="caption purchase-note">Checkout de prueba. Sin cobro. Sin reserva.</p></PreviewOnly></>;
 }

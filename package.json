@@ -10,7 +10,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "test:admin": "node scripts/test-admin.mjs"
+    "test:admin": "node scripts/test-admin.mjs",
+    "test:db": "node scripts/test-orders-db.mjs",
+    "test:checkout": "node scripts/test-checkout.mjs"
   },
   "dependencies": {
     "@fontsource/anton": "^5.2.8",
@@ -32,6 +34,7 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.3.5",
+    "pg": "^8.23.0",
     "sharp": "^0.35.4",
     "tailwindcss": "^4.1.0",
     "tsx": "^4.20.0",

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { createChunks } from '@supabase/ssr';
 async function login(page:Page,email='founder@example.test') {await page.goto('/admin/login');await page.getByLabel('Email',{exact:true}).fill(email);await page.getByLabel('Contraseña',{exact:true}).fill('fixture-password');await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();}
 async function confirm(page:Page,name:string){await page.getByRole('button',{name,exact:true}).click();await page.getByRole('dialog').getByRole('button',{name:'Confirmar',exact:true}).click();}
 test('authenticated founder configures, previews and publishes a drop using isolated fixtures',async({page,request})=>{
@@ -35,7 +36,7 @@ test('an already authenticated admin loses access when their profile is deactiva
  await request.get('http://127.0.0.1:54329/reset');
 });
 
-for (const refreshable of [true, false]) test(`expired access token ${refreshable ? 'refreshes' : 'with revoked refresh token returns to login'}`, async ({page, request, context}) => {
+for (const chunked of [false, true]) for (const refreshable of [true, false]) test(`${chunked ? 'chunked' : 'unchunked'} expired access token ${refreshable ? 'refreshes' : 'with revoked refresh token returns to login'}`, async ({page, request, context}) => {
  await request.get('http://127.0.0.1:54329/reset');
  const tokenResponse = await request.post('http://127.0.0.1:54329/auth/v1/token', {data:{email:'founder@example.test',password:'fixture-password'}});
  const session = await tokenResponse.json();
@@ -43,9 +44,12 @@ for (const refreshable of [true, false]) test(`expired access token ${refreshabl
  const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString()); claims.exp = Math.floor(Date.now()/1000)-300;
  parts[1] = Buffer.from(JSON.stringify(claims)).toString('base64url'); session.access_token = parts.join('.'); session.expires_at = claims.exp;
  if (!refreshable) session.refresh_token = 'expired';
- await context.addCookies([{name:'sb-127-auth-token', value:'base64-'+Buffer.from(JSON.stringify(session)).toString('base64url'), domain:'127.0.0.1',path:'/',sameSite:'Lax'}]);
+ const value = 'base64-'+Buffer.from(JSON.stringify(session)).toString('base64url');
+ const sessionCookies = createChunks('sb-127-auth-token', value, chunked ? 200 : undefined);
+ await context.addCookies(sessionCookies.map(cookie => ({...cookie, domain:'127.0.0.1',path:'/',sameSite:'Lax' as const})));
  const response = await page.goto('/admin');
  expect(response?.headers()['cache-control']).toContain('no-store');
+ expect((await context.cookies()).some(c=>c.name==='deipo_checkout_session')).toBe(false);
  if (refreshable) {
    await expect(page.getByRole('heading',{name:'Overview'})).toBeVisible();
    const cookies = await context.cookies(); expect(cookies.some(c=>c.name.startsWith('sb-127-auth-token'))).toBeTruthy();
@@ -64,9 +68,55 @@ test('production proxy refresh emits Secure host-only cookies and private cache 
  const parts = session.access_token.split('.'); const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
  claims.exp = Math.floor(Date.now()/1000)-300; parts[1] = Buffer.from(JSON.stringify(claims)).toString('base64url');
  session.access_token = parts.join('.'); session.expires_at = claims.exp;
- const response = await request.get('/admin', {headers:{host:'deploy-preview-12--deipo.netlify.app','x-forwarded-proto':'https',cookie:'sb-127-auth-token=base64-'+Buffer.from(JSON.stringify(session)).toString('base64url')},maxRedirects:0});
+ const response = await request.get('/admin', {headers:{host:'bydeipo.com','x-forwarded-proto':'https',cookie:'sb-127-auth-token=base64-'+Buffer.from(JSON.stringify(session)).toString('base64url')},maxRedirects:0});
  expect(response.status()).toBe(200);
- const cookies = response.headersArray().filter(h=>h.name.toLowerCase()==='set-cookie'); expect(cookies.length).toBeGreaterThan(0);
+ const cookies = response.headersArray().filter(h=>h.name.toLowerCase()==='set-cookie'); expect(cookies.some(c=>c.value.startsWith('deipo_checkout_session='))).toBe(false); expect(cookies.some(c=>c.value.startsWith('sb-127-auth-token='))).toBe(true);
  for (const cookie of cookies) { expect(cookie.value).toMatch(/; secure/i); expect(cookie.value).toMatch(/samesite=lax/i); expect(cookie.value).not.toMatch(/; domain=/i); }
  expect(response.headers()['cache-control']).toContain('no-store'); expect(response.headers()['pragma']).toBe('no-cache'); expect(response.headers()['expires']).toBe('0');
+});
+
+
+for (const path of ['/admin/login', '/admin']) test(`zero-cookie direct ${path} reaches login without checkout initialization`, async ({page, context}) => {
+ expect(await context.cookies()).toEqual([]);
+ const response = await page.goto(path);
+ expect(response?.status()).toBe(200);
+ await expect(page).toHaveURL(/\/admin\/login$/);
+ await expect(page.getByRole('heading', {name:'Iniciar sesión'})).toBeVisible();
+ expect(await context.cookies()).toEqual([]);
+ expect(response?.headers()['set-cookie']).toBeUndefined();
+});
+
+for (const existingCheckout of [false, true]) test(`Admin login and logout are independent of ${existingCheckout ? 'existing' : 'absent'} checkout cookies`, async ({page, context, request}) => {
+ await request.get('http://127.0.0.1:54329/reset');
+ expect(await context.cookies()).toEqual([]);
+ const checkout = {name:'deipo_checkout_session', value:'a'.repeat(64), domain:'127.0.0.1', path:'/', httpOnly:true, sameSite:'Lax' as const};
+ if (existingCheckout) await context.addCookies([checkout]);
+ for (const path of ['/admin', '/admin/orders', '/admin/drops']) {
+   await page.goto(path); await expect(page).toHaveURL(/\/admin\/login/);
+ }
+ await login(page); await expect(page).toHaveURL(/\/admin$/);
+ await page.reload(); await expect(page.getByRole('heading', {name:'Overview'})).toBeVisible();
+ const authenticated = await context.cookies();
+ expect(authenticated.some(c => c.name.startsWith('sb-127-auth-token'))).toBe(true);
+ expect(authenticated.find(c => c.name === checkout.name)?.value).toBe(existingCheckout ? checkout.value : undefined);
+ await page.getByRole('button', {name:'Cerrar sesión'}).click();
+ await expect(page).toHaveURL(/\/admin\/login/);
+ const loggedOut = await context.cookies();
+ expect(loggedOut.filter(c => c.name.startsWith('sb-127-auth-token'))).toHaveLength(0);
+ expect(loggedOut.find(c => c.name === checkout.name)?.value).toBe(existingCheckout ? checkout.value : undefined);
+ await page.goto('/admin'); await expect(page).toHaveURL(/\/admin\/login/);
+});
+
+test('anonymous custom-domain Admin sets no cookies and protected pages redirect server-side', async ({request}) => {
+ for (const path of ['/admin/login', '/admin', '/admin/orders', '/admin/drops']) {
+   const response = await request.get(path, {headers:{host:'bydeipo.com', 'x-forwarded-proto':'https', cookie:''}, maxRedirects:0});
+   expect(response.headersArray().filter(h => h.name.toLowerCase() === 'set-cookie')).toEqual([]);
+   if (path === '/admin/login') {
+     expect(response.status()).toBe(200);
+     expect(await response.text()).toContain('Iniciar sesión');
+   } else {
+     expect(response.status()).toBe(307);
+     expect(response.headers()['location']).toContain('/admin/login');
+   }
+ }
 });

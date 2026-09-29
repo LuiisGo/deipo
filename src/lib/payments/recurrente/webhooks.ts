@@ -33,16 +33,15 @@ export function verifyWebhook(
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new PaymentError('INVALID_WEBHOOK');
   const p = value as Record<string, unknown>;
+  // Root id identifies the provider intent, not this delivery. Business and
+  // environment fields are optional here; SQL records and diagnoses them safely.
   if (
-    typeof p.eventId !== 'string' ||
-    !p.eventId ||
-    p.eventId.length > 256 ||
-    typeof p.eventType !== 'string' ||
-    !p.eventType ||
-    p.eventType.length > 120 ||
-    !p.data ||
-    typeof p.data !== 'object' ||
-    Array.isArray(p.data)
+    typeof p.id !== 'string' ||
+    !p.id.trim() ||
+    p.id.length > 256 ||
+    typeof p.event_type !== 'string' ||
+    !p.event_type.trim() ||
+    p.event_type.length > 120
   )
     throw new PaymentError('INVALID_WEBHOOK');
   return {

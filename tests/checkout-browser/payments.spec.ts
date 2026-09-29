@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import flatPending from '../fixtures/recurrente-flat-pending.json';
 test.beforeEach(async ({ request }) => {
   await request.get('http://127.0.0.1:54329/reset');
 });
@@ -55,10 +56,22 @@ test('payment checkout API reuses provider checkout, verifies signed webhook, pr
     })
   ).json();
   expect(failed.status).toBe(401);
+  const pendingDelivery = await (
+    await request.post('http://127.0.0.1:54329/payment-fixture', {
+      data: { status: 'pending' },
+    })
+  ).json();
+  expect(pendingDelivery.status).toBe(200);
+  expect(pendingDelivery.inbox[0].processing_status).toBe('processed');
   const paid = await (
     await request.post('http://127.0.0.1:54329/payment-fixture', { data: {} })
   ).json();
   expect(paid.status).toBe(200);
+  expect(paid.svixId).not.toBe(pendingDelivery.svixId);
+  expect(paid.inbox[0].provider_intent_id).toBe(
+    pendingDelivery.inbox[0].provider_intent_id,
+  );
+  expect(paid.inbox[0].event_id).toBe(paid.svixId);
   await expect(
     page.getByRole('article', { name: 'Recibo de pago verificado' }),
   ).toBeVisible({ timeout: 10000 });
@@ -70,7 +83,7 @@ test('payment checkout API reuses provider checkout, verifies signed webhook, pr
   await expect(page.getByText('Q175.00').last()).toBeVisible();
   const replay = await (
     await request.post('http://127.0.0.1:54329/payment-fixture', {
-      data: { eventId: paid.eventId, svixId: paid.svixId },
+      data: { svixId: paid.svixId },
     })
   ).json();
   expect(replay.status).toBe(200);
@@ -252,4 +265,79 @@ test('failed payment never renders receipt and allows a new attempt; API rejects
       })
     ).status(),
   ).toBe(401);
+});
+
+test('flat signed Testing fixtures persist diagnostics; malformed/signature failures do not persist', async ({
+  request,
+}) => {
+  const stats = async () =>
+    await (await request.get('http://127.0.0.1:54329/payment-stats')).json();
+  const inventory = async () =>
+    (await (await request.get('http://127.0.0.1:54329/stats')).json())
+      .inventory;
+  const before = await stats(),
+    beforeInventory = await inventory();
+  const deliver = async (data: Record<string, unknown>) =>
+    await (
+      await request.post('http://127.0.0.1:54329/payment-fixture', { data })
+    ).json();
+  const example = await deliver({ payload: flatPending });
+  expect(example.status).toBe(200);
+  expect(example.inbox).toHaveLength(1);
+  expect(example.inbox[0].processing_status).toBe('environment_mismatch');
+  const replay = await deliver({
+    svixId: example.svixId,
+    raw: JSON.stringify(
+      Object.fromEntries(Object.entries(flatPending).reverse()),
+      null,
+      2,
+    ),
+  });
+  expect(replay.status).toBe(200);
+  expect(replay.inbox).toEqual(example.inbox);
+  const conflict = await deliver({
+    svixId: example.svixId,
+    payload: { ...flatPending, amount_in_cents: 1 },
+  });
+  expect(conflict.status).toBe(503);
+  expect(conflict.inbox).toEqual(example.inbox);
+  const natural = {
+    ...flatPending,
+    live_mode: false,
+    sandbox_id: 'sbx_isolated',
+  };
+  for (const [payload, expected] of [
+    [natural, 'unmatched'],
+    [{ ...natural, sandbox_id: 'sbx_other' }, 'environment_mismatch'],
+    [{ ...natural, live_mode: true }, 'environment_mismatch'],
+    [{ id: 'pa_legacy', event_type: 'payment_intent.succeeded' }, 'ignored'],
+    [{ ...natural, event_type: 'intent.paid', status: 'paid' }, 'ignored'],
+  ] as const) {
+    const r = await deliver({ payload });
+    expect(r.status).toBe(200);
+    expect(r.inbox[0].processing_status).toBe(expected);
+  }
+  for (const [data, status] of [
+    [{ payload: flatPending, invalid: true }, 401],
+    [{ raw: '{"event_type":' }, 400],
+    [
+      {
+        payload: {
+          eventId: 'evt_old',
+          eventType: 'intent.pending',
+          data: flatPending,
+        },
+      },
+      400,
+    ],
+    [{ payload: { event_type: 'intent.pending' } }, 400],
+  ] as const) {
+    const r = await deliver(data);
+    expect(r.status).toBe(status);
+    expect(r.inbox).toEqual([]);
+  }
+  const after = await stats();
+  expect(after.inbox - before.inbox).toBe(6);
+  expect(after.attempts).toBe(before.attempts);
+  expect(await inventory()).toEqual(beforeInventory);
 });

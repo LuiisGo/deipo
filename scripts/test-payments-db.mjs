@@ -10,6 +10,7 @@ if (
   throw Error('Disposable localhost database required');
 const pool = new pg.Pool({ connectionString: url, max: 10 });
 let checks = 0;
+let races = 0;
 const sandbox = 'sbx_isolated';
 const eq = (a, b) => {
   assert.deepEqual(a, b);
@@ -101,23 +102,19 @@ async function attempt(c, o, expired = false) {
 }
 function payload(o, event = 'succeeded', overrides = {}) {
   return {
-    eventId: randomUUID(),
-    eventType: 'intent.' + event,
-    data: {
-      event_type: 'intent.' + event,
-      id: 'in_' + o.a,
-      type: 'payment',
-      status: event,
-      raw_status: event,
-      created_at: new Date().toISOString(),
-      amount_in_cents: o.q * 17500,
-      currency: 'GTQ',
-      checkout: { id: o.checkout },
-      payment: { id: 'pa_' + o.a },
-      live_mode: false,
-      sandbox_id: sandbox,
-      ...overrides,
-    },
+    event_type: 'intent.' + event,
+    id: 'in_' + o.a,
+    type: 'payment',
+    status: event,
+    raw_status: event,
+    created_at: new Date().toISOString(),
+    amount_in_cents: o.q * 17500,
+    currency: 'GTQ',
+    checkout: { id: o.checkout },
+    payment: { id: 'pa_' + o.a },
+    live_mode: false,
+    sandbox_id: sandbox,
+    ...overrides,
   };
 }
 const receive = (c, p, svix = randomUUID()) =>
@@ -180,9 +177,15 @@ try {
       id = await receive(c, p, 'svix-normal');
     eq(await rpc(c, 'process_payment_webhook', [id, sandbox]), 'processed');
     eq(await receive(c, p, 'svix-normal'), id);
-    eq(await receive(c, p, 'svix-new-delivery'), id);
+    const second = await receive(c, p, 'svix-new-delivery');
+    eq(second !== id, true);
+    eq(await rpc(c, 'process_payment_webhook', [second, sandbox]), 'ignored');
     eq(
-      await rpc(c, 'receive_payment_webhook', ['svix-reserialized', hash(), p]),
+      await rpc(c, 'receive_payment_webhook', [
+        'svix-normal',
+        hash(),
+        Object.fromEntries(Object.entries(p).reverse()),
+      ]),
       id,
     );
     eq(await rpc(c, 'process_payment_webhook', [id, sandbox]), 'processed');
@@ -219,12 +222,96 @@ try {
     await reject(
       c,
       'select public.receive_payment_webhook($1,$2,$3)',
-      ['svix-normal', hash(), { ...p, eventId: randomUUID() }],
+      ['svix-normal', hash(), { ...p, amount_in_cents: 1 }],
       /IDENTITY_CONFLICT/,
     );
   });
   console.log(
-    'Normal 80/10/20/5 → 80/10/25/0, receipt ownership, eventId/Svix dedupe: passed',
+    'Normal 80/10/20/5 → 80/10/25/0, receipt ownership, Svix delivery dedupe: passed',
+  );
+  await tx(async (c) => {
+    const d = await fixture(c),
+      a = await attempt(c, await order(c, d));
+    const pending = payload(a, 'pending'),
+      succeeded = payload(a);
+    const first = await receive(c, pending, 'msg_lifecycle_pending');
+    eq(await rpc(c, 'process_payment_webhook', [first, sandbox]), 'processed');
+    eq((await inventory(c, d)).online_sold_units, 0);
+    const second = await receive(c, succeeded, 'msg_lifecycle_succeeded');
+    eq(first !== second, true);
+    eq(await rpc(c, 'process_payment_webhook', [second, sandbox]), 'processed');
+    const rows = (
+      await c.query(
+        'select event_id,svix_id,provider_intent_id from public.payment_webhook_events where provider_intent_id=$1 order by event_id',
+        [pending.id],
+      )
+    ).rows;
+    eq(rows.length, 2);
+    eq(
+      rows.every(
+        (r) => r.event_id === r.svix_id && r.provider_intent_id === pending.id,
+      ),
+      true,
+    );
+    eq((await inventory(c, d)).online_sold_units, 1);
+    eq(await receive(c, pending, 'msg_lifecycle_pending'), first);
+    eq(await rpc(c, 'process_payment_webhook', [first, sandbox]), 'processed');
+    eq((await facts(c, a)).status, 'paid');
+    const firstHash = (
+      await c.query(
+        'select payload_sha256 from public.payment_webhook_events where id=$1',
+        [first],
+      )
+    ).rows[0].payload_sha256;
+    eq(
+      await rpc(c, 'receive_payment_webhook', [
+        'msg_lifecycle_pending',
+        hash(),
+        Object.fromEntries(Object.entries(pending).reverse()),
+      ]),
+      first,
+    );
+    eq(
+      (
+        await c.query(
+          'select payload_sha256 from public.payment_webhook_events where id=$1',
+          [first],
+        )
+      ).rows[0].payload_sha256,
+      firstHash,
+    );
+    await reject(
+      c,
+      'select public.receive_payment_webhook($1,$2,$3)',
+      ['msg_lifecycle_pending', hash(), succeeded],
+      /IDENTITY_CONFLICT/,
+    );
+    for (const bad of [
+      { eventId: 'evt_old', eventType: 'intent.pending', data: pending },
+      { id: 123, event_type: 'intent.pending' },
+      null,
+      [],
+    ])
+      await reject(
+        c,
+        'select public.receive_payment_webhook($1,$2,$3)',
+        [randomUUID(), hash(), bad],
+        /INVALID_WEBHOOK/,
+      );
+    const minimal = {
+      id: 'in_testing',
+      event_type: 'intent.pending',
+      status: 'pending',
+    };
+    const diagnostic = await receive(c, minimal);
+    eq(
+      await rpc(c, 'process_payment_webhook', [diagnostic, sandbox]),
+      'environment_mismatch',
+    );
+    eq((await inventory(c, d)).online_sold_units, 1);
+  });
+  console.log(
+    'Flat lifecycle identity, semantic replay, conflict and optional-field diagnostics: passed',
   );
   for (const expiredPersisted of [false, true])
     await tx(async (c) => {
@@ -287,8 +374,7 @@ try {
       const d = await fixture(c),
         a = await attempt(c, await order(c, d));
       const p = payload(a);
-      p.eventType = legacy;
-      p.data.event_type = legacy;
+      p.event_type = legacy;
       eq(
         await rpc(c, 'process_payment_webhook', [await receive(c, p), sandbox]),
         'ignored',
@@ -481,6 +567,7 @@ try {
       const result = await waiting;
       await b.query(result.error ? 'rollback' : 'commit');
       await verify(c, f, result);
+      races++;
       console.log('Concurrent:', label, 'passed');
     } finally {
       await a.query('rollback');
@@ -498,6 +585,27 @@ try {
     const d = await fixture(c, 2);
     return attempt(c, await order(c, d, 2, true), true);
   };
+  await race(
+    'concurrent inbox receipt of same Svix message',
+    async (c) => {
+      const f = await active(c);
+      return { ...f, payload: payload(f), svix: randomUUID() };
+    },
+    (c, f) => receive(c, f.payload, f.svix),
+    (c, f) => receive(c, f.payload, f.svix),
+    async (c, f, r) => {
+      eq(r.error, undefined);
+      const rows = (
+        await c.query(
+          'select id from public.payment_webhook_events where svix_id=$1',
+          [f.svix],
+        )
+      ).rows;
+      eq(rows.length, 1);
+      eq(rows[0].id, r.value);
+      eq((await inventory(c, f.d)).online_sold_units, 0);
+    },
+  );
   await race(
     'same succeeded delivery',
     async (c) => {
@@ -603,7 +711,7 @@ try {
     },
   );
   console.log(
-    `Sprint 03 SQL: ${checks} assertions passed; 8 genuine concurrent races passed.`,
+    `Sprint 03 SQL: ${checks} assertions passed; ${races} genuine concurrent races passed.`,
   );
 } finally {
   await pool.end();

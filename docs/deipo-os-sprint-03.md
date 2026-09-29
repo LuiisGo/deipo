@@ -2,19 +2,21 @@
 
 Local implementation on `feat/deipo-os-sprint-03-payments`, starting at main
 `cee347fbcde230da1d75a6b69d391e7f45613559` (Admin direct-entry hotfix, PR #3).
-Application publication, PR creation, merge, deploy, LIVE payments and production
-ordering are **not authorized or performed**. Forward SQL migrations are applied
-to the existing `deipo-os` project as explicitly requested. This distinction matters:
-remote schema is updated; application code remains local.
+The initial fdf3c16 delivery was local, with no publication. The owner subsequently
+published [PR #4](https://github.com/LuiisGo/deipo/pull/4) and reported the flat-webhook
+contract failure in its Deploy Preview. The 017 correction below remains local
+until separately authorized to push. No merge, LIVE payments, production ordering
+or Production Netlify credential change is performed in this correction. Only the
+new forward SQL migration is authorized on the existing `deipo-os` project.
 
-## Provider contract verified on 2026-09-28
+## Provider contract: initial review 2026-09-28; correction rechecked 2026-09-29
 
 Sources:
 
 - [Create checkout](https://docs.recurrente.com/referencia-api/api-reference/checkouts/create-checkout)
 - [Sandbox first payment](https://docs.recurrente.com/guides-english/getting-started/first-test-payment)
 - [Webhooks](https://docs.recurrente.com/guides-english/getting-started/webhooks)
-- [Sandbox envelope and webhook fixtures](https://docs.recurrente.com/guides-english/guides/sandboxes-and-test-clocks)
+- [Sandbox guide and webhook fixtures (contract caveat below)](https://docs.recurrente.com/guides-english/guides/sandboxes-and-test-clocks)
 
 Server-only fetch client, `X-SECRET-KEY`, 10-second abort, no redirects or automatic
 POST retries. Each creation first verifies `/api/test` says the configured named
@@ -41,6 +43,7 @@ never a checkout-session token. Expiration is the original hold deadline.
 | 20260928141305 | 014_payment_checkout | 589cfda1544d0b1723ec141a4e30223b |
 | 20260928141309 | 015_payment_finalization | 6bf060db46b8845ed56452db99ba952c |
 | 20260929033116 | 016_payment_replay_integrity | 795b8d51be6c99f242ddda15d33d236b |
+| 20260929141829 | 017_recurrente_flat_webhook_contract | 587020dad5aaa1473823b0954cb6242a |
 
 Remote-assigned versions are reflected in local filenames. All previous migrations
 remain unchanged. Generated `database.types.ts` comes from Supabase's generator,
@@ -97,11 +100,80 @@ version verify returns no parsed payload; JSON parsing happens explicitly afterw
 Missing configuration returns 503; bad/missing signatures 401; malformed signed
 envelope 400; oversized input 413. Nothing is persisted before signature verification.
 
-Named Sandbox envelope: `eventType`, unique `eventId`, `data`; the inner
-`data.event_type` and status must agree. Inbox has unique event ID and original
-Svix ID, raw-body SHA-256, private verified payload and safe operational diagnostics.
-Changed semantic content reusing an identity is rejected. Equivalent JSON with different whitespace/key ordering remains idempotent; the first raw-body hash is retained. Inbox insertion commits separately;
-processing failure returns 503 so delivery can safely retry without losing evidence.
+Recurrente HTTP payloads are **flat root objects**. Parser-required fields are
+nonempty string `event_type` (max 120 characters) and `id` (max 256). Unified
+intent fields are root-level: `type`, `status`, `raw_status`, `api_version`,
+`created_at`, `amount_in_cents`, `currency`, `live_mode`, `sandbox_id`.
+`customer`, `product`, `checkout`, `payment`, `details` and optional `metadata`
+remain nested objects. No `eventId`, `eventType` or `data` wrapper is required or
+accepted as a substitute for root identity. Example with synthetic values:
+
+```json
+{
+  "id": "in_example",
+  "event_type": "intent.pending",
+  "type": "bank_transfer",
+  "status": "pending",
+  "raw_status": "pending",
+  "api_version": "2026-06-01",
+  "created_at": "2026-09-28T12:00:00Z",
+  "amount_in_cents": 2500,
+  "currency": "GTQ",
+  "checkout": { "id": "ch_example" },
+  "customer": { "id": "cus_example" },
+  "product": { "id": "prod_example" },
+  "details": { "bank_reference": null, "sender_comment": null },
+  "live_mode": false,
+  "sandbox_id": "sbx_example"
+}
+```
+
+These business/environment fields are not prerequisites for parsing a signed
+message. Testing UI/helper examples may omit them. SQL persists the complete
+verified root and then diagnoses absent/wrong environment, unknown checkout or
+incomplete business facts. Such durable diagnostics return HTTP 200 without
+allocating inventory. Natural test-card events may also lack `payment`.
+
+**Identity:** root `id` is the provider intent/domain ID; pending and succeeded
+can legitimately share it. Verified `svix-id` is the unique message identity and
+is stable on retries. For new inbox rows both `event_id` and `svix_id` store this
+Svix message ID; `provider_intent_id` stores root `id`. A separate message produces
+a separate inbox row. Replaying the same message and semantically equal JSON
+returns the original row. Changed semantic content with the same Svix ID raises
+`WEBHOOK_IDENTITY_CONFLICT`; the existing route safely returns 503 with no new
+mutation. JSON whitespace/key order may differ; the original raw SHA-256 remains.
+Concurrent inserts are serialized by the unique constraints. Processing separately
+deduplicates fulfillment, so a second message cannot commit inventory twice.
+Inbox insertion commits separately; transient processing failure returns 503 for
+safe retry without losing durable evidence.
+
+### Acceptance exposed the incorrect initial contract
+
+PR #4 Deploy Preview acceptance reported a signed flat `intent.pending` receiving
+HTTP 400, with an empty inbox. The original parser and RPCs incorrectly required
+`eventId/eventType/data`; local fixtures copied that assumption and therefore did
+not detect it. The 400 path is post-signature contract rejection; invalid signatures
+map to 401. This correction fixes the consumer contract rather than just changing
+that response status.
+
+Official sources rechecked for this correction:
+[Webhooks](https://docs.recurrente.com/guides-english/getting-started/webhooks) and
+[Unified migration](https://docs.recurrente.com/guides-english/guides/migrate-to-unified-webhooks)
+show a flat HTTP payload. [Svix verification](https://docs.svix.com/receiving/verifying-payloads/how-manual)
+defines `svix-id` as stable across resend attempts; [replays](https://docs.svix.com/retries)
+require idempotent receiving. The
+[Sandbox/helper guide](https://docs.recurrente.com/guides-english/guides/sandboxes-and-test-clocks)
+still describes a camelCase wrapper in its subscription sequence, while its helper
+section distinguishes fixture creation from natural domain flows and warns that
+natural fields are not invented. That documentation conflict is preserved here.
+The verified flat webhook guides and the user-observed HTTP acceptance payload
+govern this integration; the old wrapper is deliberately rejected, not normalized.
+
+Migration 017 replaces only the two private RPC implementations, retaining their
+signatures, fixed search paths, privileges and all downstream inventory/fulfillment
+logic. It does not rewrite 013–016, backfill/delete history, or change table schema.
+The inbox was verified empty before applying it. Generated TypeScript definitions
+need no regeneration because SQL signatures and column types do not change.
 
 Only unified `intent.pending/failed/canceled/succeeded` can transition payment state.
 Signed legacy events and `intent.paid` are recorded and ignored for fulfillment.
@@ -204,7 +276,7 @@ No keys in code, client props, logs, snapshots, vault or netlify.toml. The webho
 secret does not exist locally except an isolated test-process fixture. Build works
 without it. The account remains unverified; LIVE is a separate launch decision.
 
-After explicit push authorization:
+Original Preview acceptance plan (PR #4 now exists; correction push remains unauthorized):
 
 1. Push this branch, open a PR to existing main and wait for the existing site's
    Deploy Preview. No new Supabase project or Netlify site.
@@ -297,3 +369,63 @@ attempts and webhook inbox rows. No Sandbox fixture entered production.
 Local completion is ready for review. The delivery message and canonical Current
 Status record the final commit SHA and clean working tree; this report intentionally
 does not embed its own future commit hash. Nothing was pushed, merged or deployed.
+
+
+## Flat-contract correction delivery (after initial Sprint 03 closure)
+
+The initial no-push record above describes the previous local delivery. The owner
+subsequently published PR #4 and ran Preview acceptance; this correction starts
+from fdf3c1690bd11da071bbadcda8fb7131e2d9aaa7 on the same branch. This correction
+must be reviewed before any further push. No merge, LIVE activation, production
+ordering or Production Netlify credential modification is authorized here.
+
+New regression coverage uses a sanitized flat Testing-style fixture, signed through
+the official Svix library, plus natural flat lifecycle fixtures. It checks HTTP
+401 for bad signatures, 400 for signed malformed JSON/old envelope, durable 200
+for missing environment/unmatched/wrong Sandbox/live/legacy/intent.paid, same-intent
+pending→succeeded with distinct messages, same-message semantic replay and conflict.
+SQL exercises the unchanged amount/currency/metadata/late/duplicate/cancellation
+policies and now includes a ninth genuinely overlapping inbox-insertion race.
+The final evidence and applied migration version/hash are recorded below at closure.
+
+
+Correction closure, 2026-09-29:
+
+| Check | Exact result |
+| --- | --- |
+| Node | 22.22.1 |
+| Provider/signature | 35/35 passed |
+| Existing units | 43/43 passed |
+| Sprint 03 SQL | 155 assertions, nine genuinely overlapping races passed |
+| Sprint 02 SQL | 78 assertions and both original contention races passed |
+| Sprint 01 SQL | Transactional regression passed |
+| Checkout/payments browser | 10/10 passed (1.1m) |
+| Admin direct-entry/session browser | 14/14 passed (28.3s) |
+| Storefront browser | 42/42 passed (1.6m) |
+| ESLint / strict TypeScript | Passed |
+| Production build | Passed with RECURRENTE_WEBHOOK_SECRET explicitly empty |
+| Secret scan | Changed files and .next/static passed; no secret values printed |
+| git diff --check | Passed |
+
+Only 017 was applied remotely after local verification. Version
+`20260929141829`, MD5 `587020dad5aaa1473823b0954cb6242a`, SHA-256
+`52e009946070282b34f1f88d43983064af319db62cd5d965f934145f5218b28b`.
+Remote SQL MD5 matches the exact local file. Prior 013–016 hashes are unchanged;
+18 migrations total. No changes to generated database types, public RPC signatures,
+RLS, table ACLs, function EXECUTE grants, Admin proxy or checkout-session boundary.
+
+Before/after production checks: draft fingerprint
+`056d3ea1d4fc18e228759510e1f67d9d`, one original draft, online false, CURRENT/NEXT
+null, configuration timestamp unchanged, zero orders/holds/items/order events/
+payment attempts/webhook inbox. No production fixture or secret stored in DB.
+Security Advisor after 017 reports only the pre-existing
+[Leaked Password Protection Disabled](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)
+warning. One preliminary read-only approval review failed due to account usage limit;
+retry through the same approval mechanism succeeded, with no bypass.
+
+No code was pushed or deployed during the correction, PR #4 was not merged,
+Production Netlify credentials were not touched, and LIVE/ordering remain off.
+The actual Preview must be updated only after authorization, then the reported
+flat example retried and full isolated Sandbox payment acceptance completed.
+A local HTTP 200 diagnostic does not establish live provider fulfillment acceptance.
+The final commit SHA and clean status appear in the delivery and canonical vault.

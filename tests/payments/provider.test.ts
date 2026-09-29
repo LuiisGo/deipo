@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import flatPending from '../fixtures/recurrente-flat-pending.json';
 import assert from 'node:assert/strict';
 import { Webhook } from 'svix';
 import {
@@ -226,19 +227,15 @@ const secret =
   'whsec_' +
   Buffer.from('isolated-32-byte-signing-key-12345').toString('base64');
 const raw = JSON.stringify({
-  eventType: 'intent.succeeded',
-  eventId: 'evt_test',
-  data: {
-    event_type: 'intent.succeeded',
-    type: 'payment',
-    status: 'succeeded',
-    id: 'in_test',
-    amount_in_cents: 35000,
-    currency: 'GTQ',
-    checkout: { id: 'ch_test' },
-    live_mode: false,
-    sandbox_id: 'sbx_isolated',
-  },
+  event_type: 'intent.succeeded',
+  type: 'payment',
+  status: 'succeeded',
+  id: 'in_test',
+  amount_in_cents: 35000,
+  currency: 'GTQ',
+  checkout: { id: 'ch_test' },
+  live_mode: false,
+  sandbox_id: 'sbx_isolated',
 });
 function signed(body = raw, when = new Date()) {
   return new Headers({
@@ -247,11 +244,11 @@ function signed(body = raw, when = new Date()) {
     'svix-signature': new Webhook(secret).sign('msg_test', when, body),
   });
 }
-test('official Svix verifies exact raw bytes and Sandbox delivery envelope', () => {
+test('official Svix verifies exact raw bytes and flat intent payload', () => {
   const v = verifyWebhook(raw, signed(), secret);
   assert.equal(v.svixId, 'msg_test');
   assert.equal(v.sha256.length, 64);
-  assert.equal((v.payload as { eventId: string }).eventId, 'evt_test');
+  assert.equal((v.payload as { id: string }).id, 'in_test');
 });
 for (const failure of ['missing', 'tampered', 'wrong secret', 'expired'])
   test('Svix rejects ' + failure, () => {
@@ -274,7 +271,7 @@ for (const failure of ['missing', 'tampered', 'wrong secret', 'expired'])
       { code: 'INVALID_SIGNATURE' },
     );
   });
-test('signing secret is required only on request; invalid envelope rejected', () => {
+test('signing secret is required only on request; invalid contract rejected', () => {
   assert.throws(() => verifyWebhook(raw, signed(), undefined), {
     code: 'PAYMENTS_NOT_CONFIGURED',
   });
@@ -289,4 +286,46 @@ test('stream body cap is enforced without trusting content-length', async () => 
     body: '12345',
   });
   await assert.rejects(readWebhookBody(r, 4), { code: 'BODY_TOO_LARGE' });
+});
+
+test('signed flat Testing example accepts absent optional environment/payment fields', () => {
+  const body = JSON.stringify(flatPending);
+  assert.deepEqual(
+    verifyWebhook(body, signed(body), secret).payload,
+    flatPending,
+  );
+});
+for (const [name, value] of [
+  [
+    'old camelCase envelope',
+    { eventId: 'evt_old', eventType: 'intent.pending', data: flatPending },
+  ],
+  ['null', null],
+  ['array', []],
+  ['numeric intent id', { id: 123, event_type: 'intent.pending' }],
+  ['missing event type', { id: 'in_test' }],
+  ['blank event type', { id: 'in_test', event_type: ' ' }],
+  ['blank intent id', { id: ' ', event_type: 'intent.pending' }],
+] as const)
+  test('signed malformed contract rejects ' + name, () => {
+    const body = JSON.stringify(value);
+    assert.throws(() => verifyWebhook(body, signed(body), secret), {
+      code: 'INVALID_WEBHOOK',
+    });
+  });
+test('signed invalid JSON rejects after successful signature verification', () => {
+  const body = '{"event_type":';
+  assert.throws(() => verifyWebhook(body, signed(body), secret), {
+    code: 'INVALID_WEBHOOK',
+  });
+});
+test('signed legacy flat event is accepted for durable ignored processing', () => {
+  const body = JSON.stringify({
+    id: 'pa_legacy',
+    event_type: 'payment_intent.succeeded',
+  });
+  assert.equal(
+    (verifyWebhook(body, signed(body), secret).payload as { id: string }).id,
+    'pa_legacy',
+  );
 });

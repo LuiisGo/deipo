@@ -15,12 +15,12 @@ http.createServer(async(req,res)=>{const send=(x,status=200)=>{res.writeHead(sta
  if(path.pathname==='/provider/checkouts'){const id='ch_'+randomUUID().replaceAll('-','');return send({id,status:'unpaid',checkout_url:'https://app.recurrente.com/checkout-session/'+id,live_mode:false,sandbox_id:'sbx_isolated',total_in_cents:body.items.reduce((n,i)=>n+i.quantity*i.amount_in_cents,0),currency:'GTQ',expires_at:body.expires_at},201);}
  if(path.pathname==='/payment-fixture'){
   const a=(await pool.query('select a.* from public.payment_attempts a join public.orders o on o.id=a.order_id join public.inventory_holds h on h.id=o.hold_id where h.drop_id=$1 order by a.created_at desc limit 1',[current])).rows[0];
-  if(!a)return send({error:'No attempt'},404);
-  const status=body.status??'succeeded';const payload={eventId:body.eventId??randomUUID(),eventType:body.eventType??'intent.'+status,data:{event_type:body.eventType??'intent.'+status,id:'in_'+a.id,type:body.type??'payment',status,raw_status:status,amount_in_cents:body.amount??a.amount_minor,currency:body.currency??'GTQ',checkout:{id:body.checkout??a.provider_checkout_id},live_mode:body.live_mode??false,sandbox_id:body.sandbox_id??'sbx_isolated'}};
-  const raw=JSON.stringify(payload),id=body.svixId??randomUUID(),time=new Date();
+  if(!a&&!body.payload&&body.raw===undefined)return send({error:'No attempt'},404);
+  const status=body.status??'succeeded';const payload=body.payload??(body.raw!==undefined?{}:{event_type:body.eventType??'intent.'+status,id:'in_'+a.id,type:body.type??'payment',status,raw_status:status,amount_in_cents:body.amount??a.amount_minor,currency:body.currency??'GTQ',checkout:{id:body.checkout??a.provider_checkout_id},live_mode:body.live_mode??false,sandbox_id:body.sandbox_id??'sbx_isolated'});
+  const raw=body.raw??JSON.stringify(payload),id=body.svixId??randomUUID(),time=new Date();
   const signature=new Webhook(process.env.RECURRENTE_WEBHOOK_SECRET).sign(id,time,raw);
   const response=await fetch('http://127.0.0.1:3002/api/webhooks/recurrente',{method:'POST',headers:{'content-type':'application/json','svix-id':id,'svix-timestamp':String(Math.floor(time.getTime()/1000)),'svix-signature':body.invalid?'v1,invalid':signature},body:raw});
-  return send({status:response.status,body:await response.json(),eventId:payload.eventId,svixId:id});
+  return send({status:response.status,body:await response.json(),svixId:id,inbox:(await pool.query('select event_id,svix_id,provider_intent_id,event_type,processing_status from public.payment_webhook_events where svix_id=$1',[id])).rows});
  }
  if(path.pathname==='/payment-stats')return send((await pool.query('select (select count(*) from public.payment_attempts a join public.orders o on o.id=a.order_id join public.inventory_holds h on h.id=o.hold_id where h.drop_id=$1) attempts,(select count(*) from public.payment_webhook_events) inbox',[current])).rows[0]);
  if(path.pathname==='/reset'){await reset();return send({id:current});}

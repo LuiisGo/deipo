@@ -12,7 +12,9 @@
     "test:e2e": "playwright test",
     "test:admin": "node scripts/test-admin.mjs",
     "test:db": "node scripts/test-orders-db.mjs",
-    "test:checkout": "node scripts/test-checkout.mjs"
+    "test:checkout": "node scripts/test-checkout.mjs",
+    "test:payments": "node --conditions=react-server --import tsx --test tests/payments/*.test.ts",
+    "test:payments:db": "node scripts/test-payments-db.mjs"
   },
   "dependencies": {
     "@fontsource/anton": "^5.2.8",
@@ -23,7 +25,8 @@
     "next": "16.3.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "svix": "2.5.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",

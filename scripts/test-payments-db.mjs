@@ -1,5 +1,15 @@
 // Genuine PostgreSQL transactions; refuses every non-loopback database.
 import pg from 'pg';
+import { readFileSync } from 'node:fs';
+const unifiedSandbox = JSON.parse(
+  readFileSync(
+    new URL(
+      '../tests/fixtures/recurrente-unified-sandbox-succeeded.json',
+      import.meta.url,
+    ),
+    'utf8',
+  ),
+);
 import assert from 'node:assert/strict';
 import { randomUUID, createHash } from 'node:crypto';
 const url = process.env.DEIPO_TEST_DATABASE_URL;
@@ -313,6 +323,183 @@ try {
   console.log(
     'Flat lifecycle identity, semantic replay, conflict and optional-field diagnostics: passed',
   );
+  // Sanitized shape from actual Sandbox delivery: exact sandbox_id, no live_mode.
+  for (const [name, changes, configured, expected, reason] of [
+    ['absent live_mode', {}, sandbox, 'processed', null],
+    ['false live_mode', { live_mode: false }, sandbox, 'processed', null],
+    ['null live_mode', { live_mode: null }, sandbox, 'processed', null],
+    [
+      'true live_mode',
+      { live_mode: true },
+      sandbox,
+      'environment_mismatch',
+      'ENVIRONMENT_MISMATCH',
+    ],
+    [
+      'missing sandbox',
+      { sandbox_id: undefined },
+      sandbox,
+      'environment_mismatch',
+      'ENVIRONMENT_MISMATCH',
+    ],
+    [
+      'empty sandbox',
+      { sandbox_id: '' },
+      sandbox,
+      'environment_mismatch',
+      'ENVIRONMENT_MISMATCH',
+    ],
+    [
+      'null sandbox',
+      { sandbox_id: null },
+      sandbox,
+      'environment_mismatch',
+      'ENVIRONMENT_MISMATCH',
+    ],
+    [
+      'different sandbox',
+      { sandbox_id: 'sbx_other' },
+      sandbox,
+      'environment_mismatch',
+      'ENVIRONMENT_MISMATCH',
+    ],
+    [
+      'empty configured sandbox',
+      {},
+      '',
+      'environment_mismatch',
+      'ENVIRONMENT_MISMATCH',
+    ],
+    [
+      'null configured sandbox',
+      {},
+      null,
+      'environment_mismatch',
+      'ENVIRONMENT_MISMATCH',
+    ],
+    [
+      'invalid amount',
+      { amount_in_cents: 1 },
+      sandbox,
+      'review_required',
+      'AMOUNT_MISMATCH',
+    ],
+    [
+      'wrong checkout',
+      { checkout: { id: 'ch_unmatched_fixture' } },
+      sandbox,
+      'unmatched',
+      'UNMATCHED_CHECKOUT',
+    ],
+    [
+      'invalid currency',
+      { currency: 'USD' },
+      sandbox,
+      'review_required',
+      'CURRENCY_MISMATCH',
+    ],
+    [
+      'invalid type',
+      { type: 'balance' },
+      sandbox,
+      'review_required',
+      'UNSUPPORTED_PAYMENT_METHOD',
+    ],
+    [
+      'invalid status',
+      { status: 'pending' },
+      sandbox,
+      'review_required',
+      'INVALID_EVENT_CONTRACT',
+    ],
+    [
+      'invalid metadata',
+      { metadata: { deipo_order_code: 'D-OTHER' } },
+      sandbox,
+      'review_required',
+      'METADATA_MISMATCH',
+    ],
+  ]) {
+    await tx(async (c) => {
+      const d = await fixture(c);
+      await c.query('update public.drops set price_minor=1000 where id=$1', [
+        d,
+      ]);
+      const a = await attempt(c, await order(c, d));
+      const code = (
+        await c.query('select order_code from public.orders where id=$1', [
+          a.oid,
+        ])
+      ).rows[0].order_code;
+      const p = {
+        ...unifiedSandbox,
+        id: 'in_' + a.a,
+        checkout: {
+          id: a.checkout,
+          metadata: { deipo_order_code: code, deipo_payment_attempt_id: a.a },
+        },
+        payment: { id: 'pa_' + a.a },
+        ...changes,
+      };
+      const before = await inventory(c, d);
+      const id = await receive(c, p);
+      eq(await rpc(c, 'process_payment_webhook', [id, configured]), expected);
+      const inbox = (
+        await c.query(
+          'select processing_status,processing_error from public.payment_webhook_events where id=$1',
+          [id],
+        )
+      ).rows[0];
+      eq(inbox, { processing_status: expected, processing_error: reason });
+      const after = await inventory(c, d);
+      eq(after.online_sold_units, expected === 'processed' ? 1 : 0);
+      const f = await facts(c, a);
+      eq(f.inventory_committed_at !== null, expected === 'processed');
+      if (expected === 'processed') {
+        eq(f.status, 'paid');
+        eq(after.held_units, 0);
+        eq(after.available, before.available);
+        eq(
+          (await rpc(c, 'customer_payment_state', [a.session])).receipt
+            .total_minor,
+          1000,
+        );
+      } else {
+        eq(
+          (await rpc(c, 'customer_payment_state', [a.session])).receipt ?? null,
+          null,
+        );
+        if (expected === 'environment_mismatch' || expected === 'unmatched') {
+          eq(after, before);
+          eq(f.status, 'pending_payment');
+        }
+      }
+      // Terminal diagnostics are immutable even when the caller fixes its config.
+      if (expected === 'environment_mismatch') {
+        const evidence = (
+          await c.query(
+            'select to_jsonb(e) row from public.payment_webhook_events e where id=$1',
+            [id],
+          )
+        ).rows[0].row;
+        eq(
+          await rpc(c, 'process_payment_webhook', [id, sandbox]),
+          'environment_mismatch',
+        );
+        eq(
+          (
+            await c.query(
+              'select to_jsonb(e) row from public.payment_webhook_events e where id=$1',
+              [id],
+            )
+          ).rows[0].row,
+          evidence,
+        );
+        eq(await inventory(c, d), before);
+      }
+    });
+    console.log('Unified Sandbox contract:', name, 'passed');
+  }
   for (const expiredPersisted of [false, true])
     await tx(async (c) => {
       const d = await fixture(c, 5),
@@ -348,7 +535,6 @@ try {
   for (const [changes, status] of [
     [{ sandbox_id: 'sbx_other' }, 'environment_mismatch'],
     [{ live_mode: true }, 'environment_mismatch'],
-    [{ live_mode: null }, 'environment_mismatch'],
     [{ amount_in_cents: 1 }, 'review_required'],
     [{ amount_in_cents: null }, 'review_required'],
     [{ currency: 'USD' }, 'review_required'],

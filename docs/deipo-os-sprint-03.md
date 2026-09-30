@@ -4,10 +4,12 @@ Local implementation on `feat/deipo-os-sprint-03-payments`, starting at main
 `cee347fbcde230da1d75a6b69d391e7f45613559` (Admin direct-entry hotfix, PR #3).
 The initial fdf3c16 delivery was local, with no publication. The owner subsequently
 published [PR #4](https://github.com/LuiisGo/deipo/pull/4) and reported the flat-webhook
-contract failure in its Deploy Preview. The 017 correction below remains local
-until separately authorized to push. No merge, LIVE payments, production ordering
-or Production Netlify credential change is performed in this correction. Only the
-new forward SQL migration is authorized on the existing `deipo-os` project.
+contract failure in its Deploy Preview. Historical delivery notes below record
+017 and the runtime-origin correction. As of 2026-09-30, baseline `80baff3` reached
+real Sandbox checkout; acceptance exposed the unified environment contract issue
+addressed by 018 below. This correction permits applying 018 only to
+`deipo-os-acceptance`. Do not apply 018 to production `deipo-os` until acceptance
+passes. No push, merge, LIVE activation or Production Netlify change is authorized.
 
 ## Provider contract: initial review 2026-09-28; correction rechecked 2026-09-29
 
@@ -44,6 +46,7 @@ never a checkout-session token. Expiration is the original hold deadline.
 | 20260928141309 | 015_payment_finalization | 6bf060db46b8845ed56452db99ba952c |
 | 20260929033116 | 016_payment_replay_integrity | 795b8d51be6c99f242ddda15d33d236b |
 | 20260929141829 | 017_recurrente_flat_webhook_contract | 587020dad5aaa1473823b0954cb6242a |
+| 20260930180615 | 018_unified_webhook_sandbox_environment (acceptance only) | bc2a56fcb2f7c3813dc3ce52c784775a |
 
 Remote-assigned versions are reflected in local filenames. All previous migrations
 remain unchanged. Generated `database.types.ts` comes from Supabase's generator,
@@ -189,8 +192,14 @@ need no regeneration because SQL signatures and column types do not change.
 
 Only unified `intent.pending/failed/canceled/succeeded` can transition payment state.
 Signed legacy events and `intent.paid` are recorded and ignored for fulfillment.
-Every relevant event must have boolean `live_mode=false` and exact configured
-`sandbox_id`. Unknown checkout is durable/unmatched and acknowledged; mismatched
+Historical rule through 017 (superseded by 018): every relevant event required
+boolean `live_mode=false` and exact configured `sandbox_id`. Actual unified Sandbox
+success omitted `live_mode`, so that rule incorrectly rejected it.
+
+Current rule (018): configured Sandbox ID and event Sandbox ID must both be
+nonempty and exactly equal. Explicit `live_mode=true` is rejected; false or
+absent/null is eligible only with that exact Sandbox identity. Other validation
+still applies. Unknown checkout is durable/unmatched and acknowledged; mismatched
 environment is durable/visible and acknowledged. Neither changes inventory.
 
 Correlation is checkout ID -> local attempt. Provider amount must exactly equal
@@ -477,3 +486,72 @@ Local commit only. No push, redeploy, merge of PR #4 or LIVE activation.
 After separate push approval, verify the new SHA in Preview, recreate the expired
 acceptance hold if necessary, and repeat real Hosted Checkout acceptance. A local
 pass does not prove the deployed provider flow. Leave Production's allowlist unset.
+
+
+## 2026-09-30 — Unified Sandbox environment contract correction (018)
+
+Real acceptance reached Hosted Checkout and delivered a signed `intent.succeeded`
+with type `payment`, status `succeeded`, amount 1000, currency GTQ, an exact named
+Sandbox ID, checkout correlation, payment ID and matching DEIPO metadata. Svix
+verification succeeded and the inbox persisted the event, but its final diagnostic
+was `environment_mismatch`. Read-only acceptance inspection confirmed that the
+payload's `live_mode` key was absent and the stored boolean was SQL NULL.
+
+Root cause: 017 tested `e.live_mode IS DISTINCT FROM false`; SQL NULL satisfies
+that rejection condition. Legacy Sandbox examples containing `live_mode=false`
+were incorrectly treated as the required unified contract. The
+[Unified Webhooks guide](https://docs.recurrente.com/guides-english/guides/migrate-to-unified-webhooks)
+and [Webhooks common payload](https://docs.recurrente.com/guides-english/getting-started/webhooks)
+do not include `live_mode` among the common unified fields; the observed Sandbox
+delivery supplies exact `sandbox_id` identity.
+
+018 uses only CREATE OR REPLACE for `private.process_payment_webhook`. Its sole
+body change requires nonempty configured/event Sandbox IDs and exact equality,
+and rejects `e.live_mode IS TRUE`. Missing/null live_mode can no longer reject an
+otherwise correctly scoped Sandbox event; missing/empty/different Sandbox identity
+still rejects. No parser, signature verification, provider client, schema, grants,
+locks, inventory rules, amount/currency/type/metadata checks, monotonicity, duplicate
+payment handling or receipt logic changes. Migrations 013–017 are immutable.
+
+`recurrente-unified-sandbox-succeeded.json` represents the observed shape using
+synthetic identities. SQL regressions use the observed 1000-cent amount. Browser
+regressions bind the same shape to their isolated order snapshot and exercise the
+signed HTTP path, invalid signatures, replay, diagnostics and receipt eligibility.
+
+Preserve the real rejected event as evidence. Do not reset its status, modify its
+payload, manually mark its order paid, convert its inventory or force a replay.
+Existing terminal diagnostics remain terminal. After authorized release, acceptance
+must use a new order, new Hosted Checkout and new Sandbox payment. A successful
+local regression or applied migration does not complete real payment acceptance.
+
+
+018 validation and application evidence:
+
+- Node 22.22.1: 80 provider/signature/origin tests; 43 unit tests; 279 SQL
+  assertions and 9 genuine concurrency races; 18 checkout/payment browser tests
+  (1.4m); TypeScript, lint and production webpack build all passed. Build ran with
+  webhook signing secret and runtime origin allowlist empty.
+- Regression demonstrated against local 017 first: absent live_mode returned
+  environment_mismatch instead of processed. Applying 018 forward made it pass.
+- Exact source comparison proves the only function-body change is the provider
+  environment condition. 013–017 have no Git diff; no generated types changed.
+- Acceptance project `deipo-os-acceptance` now has 19 migration records, latest
+  `20260930180615_018_unified_webhook_sandbox_environment.sql`. SQL MD5 matches
+  local exactly: `bc2a56fcb2f7c3813dc3ce52c784775a`. Function body MD5:
+  `9db5faf1ba7f3f7986b90d8c4f06d0d7`.
+- Before/after hashes of all inbox rows, attempts, orders, holds, order events,
+  drops and storefront configuration were identical. The actual rejected event
+  remains environment_mismatch with its original payload. No real event was
+  reprocessed and no order or inventory was manually changed.
+- Webhook function ACLs, SECURITY DEFINER/invoker properties and fixed search_path
+  are unchanged; receive implementation and public wrappers have identical hashes.
+- Production `deipo-os` still has 18 migration records through 017, with identical
+  before/after migration lists. 018 was not applied there. No Production Netlify
+  environment changes and no LIVE activation.
+- Secret scan over seven changed/new files and 122 browser bundle files: no
+  findings. No secret printed or committed. Only synthetic fixture identities are
+  added to tests; the actual provider body is not copied into the repository.
+
+Local commit only; no push or merge. Next acceptance must use a NEW order, NEW
+Hosted Checkout and NEW Sandbox payment after authorized release. Production 018
+remains deferred until that acceptance passes.

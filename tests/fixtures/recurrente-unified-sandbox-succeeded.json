@@ -1,0 +1,17 @@
+{
+  "event_type": "intent.succeeded",
+  "id": "in_unified_sandbox_fixture",
+  "type": "payment",
+  "status": "succeeded",
+  "amount_in_cents": 1000,
+  "currency": "GTQ",
+  "sandbox_id": "sbx_isolated",
+  "checkout": {
+    "id": "ch_unified_sandbox_fixture",
+    "metadata": {
+      "deipo_order_code": "D-UNIFIED-FIXTURE",
+      "deipo_payment_attempt_id": "00000000-0000-4000-8000-000000000001"
+    }
+  },
+  "payment": { "id": "pa_unified_sandbox_fixture" }
+}

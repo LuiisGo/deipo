@@ -341,3 +341,86 @@ test('flat signed Testing fixtures persist diagnostics; malformed/signature fail
   expect(after.attempts).toBe(before.attempts);
   expect(await inventory()).toEqual(beforeInventory);
 });
+
+// Signed HTTP → durable inbox → SQL → inventory/receipt, using the observed
+// unified Sandbox shape (synthetic IDs; amounts bound to the fixture order).
+for (const [name, overrides, omitSandbox, expected, reason] of [
+  ['absent live_mode', {}, false, 'processed', null],
+  ['false live_mode', { live_mode: false }, false, 'processed', null],
+  ['null live_mode', { live_mode: null }, false, 'processed', null],
+  [
+    'true live_mode',
+    { live_mode: true },
+    false,
+    'environment_mismatch',
+    'ENVIRONMENT_MISMATCH',
+  ],
+  ['missing sandbox', {}, true, 'environment_mismatch', 'ENVIRONMENT_MISMATCH'],
+  [
+    'different sandbox',
+    { sandbox_id: 'sbx_other' },
+    false,
+    'environment_mismatch',
+    'ENVIRONMENT_MISMATCH',
+  ],
+  [
+    'invalid amount without live_mode',
+    { amount_in_cents: 1 },
+    false,
+    'review_required',
+    'AMOUNT_MISMATCH',
+  ],
+  [
+    'wrong checkout without live_mode',
+    { checkout: { id: 'ch_unknown' } },
+    false,
+    'unmatched',
+    'UNMATCHED_CHECKOUT',
+  ],
+] as const) {
+  test(`signed unified Sandbox: ${name}`, async ({ page, request }) => {
+    await pending(page);
+    expect((await start(page)).status).toBe(200);
+    const stats = async () =>
+      (await (await request.get('http://127.0.0.1:54329/stats')).json())
+        .inventory;
+    const before = await stats();
+    const body = { unified: true, overrides, omitSandbox };
+    const deliver = async (data: Record<string, unknown>) =>
+      (
+        await request.post('http://127.0.0.1:54329/payment-fixture', { data })
+      ).json();
+    const invalid = await deliver({ ...body, invalid: true });
+    expect(invalid.status).toBe(401);
+    expect(invalid.inbox).toEqual([]);
+    expect(await stats()).toEqual(before);
+    const result = await deliver(body);
+    expect(result.status).toBe(200);
+    expect(result.inbox[0].processing_status).toBe(expected);
+    expect(result.inbox[0].processing_error).toBe(reason);
+    const replay = await deliver({ ...body, svixId: result.svixId });
+    expect(replay.status).toBe(200);
+    expect(replay.inbox).toEqual(result.inbox);
+    const after = await stats();
+    expect(after.online_sold_units).toBe(expected === 'processed' ? 1 : 0);
+    if (expected === 'processed') {
+      expect(after.held_units).toBe(0);
+      expect(after.available).toBe(before.available);
+    } else if (
+      expected === 'environment_mismatch' ||
+      expected === 'unmatched'
+    ) {
+      expect(after).toEqual(before);
+    }
+    await page.goto('/success');
+    if (expected === 'processed') {
+      await expect(
+        page.getByRole('article', { name: 'Recibo de pago verificado' }),
+      ).toBeVisible();
+    } else {
+      await expect(
+        page.getByRole('article', { name: 'Recibo de pago verificado' }),
+      ).toHaveCount(0);
+    }
+  });
+}

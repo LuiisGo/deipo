@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import flatPending from '../fixtures/recurrente-flat-pending.json';
+import unifiedSandbox from '../fixtures/recurrente-unified-sandbox-succeeded.json';
 import assert from 'node:assert/strict';
 import { Webhook } from 'svix';
 import {
@@ -457,4 +458,16 @@ test('signed legacy flat event is accepted for durable ignored processing', () =
     (verifyWebhook(body, signed(body), secret).payload as { id: string }).id,
     'pa_legacy',
   );
+});
+
+// Actual unified Sandbox shape, with synthetic IDs and no live_mode key.
+test('signed unified Sandbox success preserves exact Sandbox identity without live_mode', () => {
+  assert.equal(Object.hasOwn(unifiedSandbox, 'live_mode'), false);
+  const body = JSON.stringify(unifiedSandbox);
+  const verified = verifyWebhook(body, signed(body), secret);
+  assert.deepEqual(verified.payload, unifiedSandbox);
+  assert.equal(verified.sha256.length, 64);
+  assert.throws(() => verifyWebhook(body + ' ', signed(body), secret), {
+    code: 'INVALID_SIGNATURE',
+  });
 });

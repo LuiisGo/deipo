@@ -1,6 +1,6 @@
 import { PaymentError } from './errors';
-// Netlify sets DEPLOY_PRIME_URL to this deploy's alias. Never infer a preview
-// origin from a wildcard Host header or accept a preview of another site.
+// Hosted authorization uses explicit Functions/runtime configuration, never
+// Netlify build-only deploy metadata or a Host-derived allowlist.
 export function trustedPaymentOrigin(
   request: Request,
   env: Record<string, string | undefined> = process.env,
@@ -18,19 +18,29 @@ export function trustedPaymentOrigin(
     request.headers.get('sec-fetch-site') === 'cross-site'
   )
     throw new PaymentError('NOT_AUTHORIZED');
-  const local =
-    ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname) &&
-    origin.protocol === 'http:' &&
-    !env.NETLIFY;
-  const production = origin.origin === 'https://bydeipo.com';
-  const preview =
-    origin.origin === env.DEPLOY_PRIME_URL &&
-    /^https:\/\/deploy-preview-\d+--deipo\.netlify\.app$/.test(origin.origin) &&
-    env.CONTEXT === 'deploy-preview';
-  if (!local && !production && !preview)
+  const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(
+    origin.hostname,
+  );
+  if (loopback) {
+    // SITE_ID is guaranteed at Netlify Functions runtime; NETLIFY also covers
+    // local Netlify tooling. An explicit allowlist cannot enable loopback there.
+    if (origin.protocol !== 'http:' || env.NETLIFY || env.SITE_ID)
+      throw new PaymentError('NOT_AUTHORIZED');
+    return origin.origin;
+  }
+  let allowed: URL;
+  try {
+    allowed = new URL(env.PAYMENT_ALLOWED_ORIGIN ?? '');
+  } catch {
     throw new PaymentError('NOT_AUTHORIZED');
-  // Sandbox acceptance cannot be accidentally activated on production hosting.
-  if (env.CONTEXT === 'production')
-    throw new PaymentError('PAYMENT_NOT_AVAILABLE');
+  }
+  // Require a canonical HTTPS origin, without credentials, path, query or hash.
+  // Production has no configured value and therefore remains fail-closed.
+  if (
+    allowed.protocol !== 'https:' ||
+    allowed.origin !== env.PAYMENT_ALLOWED_ORIGIN ||
+    origin.origin !== allowed.origin
+  )
+    throw new PaymentError('NOT_AUTHORIZED');
   return origin.origin;
 }

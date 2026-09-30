@@ -87,10 +87,22 @@ unknown by customer state, Admin and the next preparation request. This is a sta
 operation threshold, not permission to retry. Confirmed provider rejection can
 produce a failed attempt. Every retry revalidates reservation eligibility.
 
-Trusted origins: canonical `https://bydeipo.com`, the exact Netlify-provided
-`DEPLOY_PRIME_URL` matching this site's deploy-preview hostname, or HTTP loopback
-outside Netlify. Sandbox checkout initiation is explicitly rejected in Netlify's
-production context. No arbitrary Host-derived return URL. No capability in URLs.
+Trusted hosted origins require an exact canonical HTTPS `PAYMENT_ALLOWED_ORIGIN`
+configured server-side in Netlify's Functions/runtime scope for the authorized
+Deploy Preview only. Missing/malformed configuration fails closed, including
+`https://bydeipo.com` in Production, where this variable must remain unset.
+Origin must be canonical and match Host; cross-site requests are rejected.
+Forwarded headers are not trusted. No wildcard or automatic preview-number acceptance.
+HTTP loopback (localhost, 127.0.0.1, [::1]) is allowed only outside Netlify;
+`SITE_ID` (runtime-guaranteed) or `NETLIFY` disables that exception.
+No arbitrary Host-derived return URL. No capability in URLs.
+
+The prior `DEPLOY_PRIME_URL` / `CONTEXT` authorization depended on build-time
+metadata unavailable in Functions runtime and rejected legitimate Preview requests
+before `prepare_payment_checkout`. Netlify documents only `URL`, `SITE_NAME`, and
+`SITE_ID` as runtime read-only variables:
+[Functions environment variables](https://docs.netlify.com/build/functions/environment-variables/).
+The explicit runtime allowlist replaces that assumption without enabling Production.
 
 ## Verified inbox and atomic fulfillment
 
@@ -270,7 +282,8 @@ Names only:
 - `SUPABASE_SECRET_KEY` (server-only trusted RPC credential)
 - `RECURRENTE_SECRET_KEY`, `RECURRENTE_MODE`, `RECURRENTE_SANDBOX_ID`
 - `RECURRENTE_WEBHOOK_SECRET` (request-time requirement, not build-time)
-- Netlify supplies `CONTEXT`, `NETLIFY`, `DEPLOY_PRIME_URL`
+- `PAYMENT_ALLOWED_ORIGIN` (exact authorized Preview HTTPS origin, Functions/runtime only; unset in Production)
+- Netlify runtime `SITE_ID` identifies hosting for the loopback prohibition
 
 No keys in code, client props, logs, snapshots, vault or netlify.toml. The webhook
 secret does not exist locally except an isolated test-process fixture. Build works
@@ -429,3 +442,38 @@ The actual Preview must be updated only after authorization, then the reported
 flat example retried and full isolated Sandbox payment acceptance completed.
 A local HTTP 200 diagnostic does not establish live provider fulfillment acceptance.
 The final commit SHA and clean status appear in the delivery and canonical vault.
+
+
+## 2026-09-29 — Runtime payment origin acceptance hotfix
+
+The previous runtime authorization incorrectly required build-only Netlify deploy
+metadata, rejecting the legitimate Preview Origin before payment preparation.
+`PAYMENT_ALLOWED_ORIGIN` now supplies the exact server runtime allowlist; Origin
+canonicality, Host equality and cross-site rejection remain mandatory. Forwarded
+headers do not bypass Host. Production has no value and remains fail-closed.
+HTTP loopback is restricted to local development outside Netlify, including when
+only the runtime-guaranteed SITE_ID identifies hosting.
+
+Changed application code is limited to `src/lib/payments/origin.ts`; tests,
+`.env.example` and this runbook document the new contract. No payment business
+logic, Recurrente client, webhook, inventory, migration or remote configuration
+changed. The acceptance environment and existing hold were not mutated.
+
+Validation on Node 22.22.1:
+
+- Provider/origin/handler: 79 passed, including Production rejection before any
+  Supabase/provider fetch when the runtime allowlist is absent.
+- Unit suite: 43 passed; TypeScript and lint passed.
+- Payment SQL: 155 assertions and 9 genuine concurrent races passed in a new
+  disposable local database, removed after validation.
+- Checkout/payment browser tests: 10 passed (1.6m). Existing local-image SSRF
+  warnings remain; protection was not relaxed.
+- Production webpack build passed with PAYMENT_ALLOWED_ORIGIN and webhook
+  signing secret empty, proving neither is a build-time requirement.
+- Changed files and client bundles scanned for credential patterns and exact
+  private environment values without printing them; no findings.
+
+Local commit only. No push, redeploy, merge of PR #4 or LIVE activation.
+After separate push approval, verify the new SHA in Preview, recreate the expired
+acceptance hold if necessary, and repeat real Hosted Checkout acceptance. A local
+pass does not prove the deployed provider flow. Leave Production's allowlist unset.

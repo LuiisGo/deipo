@@ -11,6 +11,8 @@ import {
   readWebhookBody,
 } from '../../src/lib/payments/recurrente/webhooks';
 import { trustedPaymentOrigin } from '../../src/lib/payments/origin';
+import { NextRequest } from 'next/server';
+import { POST as paymentCheckout } from '../../src/app/api/payments/recurrente/checkout/route';
 import type { PaymentPreparation } from '../../src/lib/payments/recurrente/types';
 const env = {
   RECURRENTE_MODE: 'sandbox',
@@ -191,37 +193,164 @@ test('wrong key environment is rejected before a mutation', async () => {
     { code: 'INVALID_PAYMENT_ENVIRONMENT' },
   );
 });
+const preview = 'https://deploy-preview-4--deipo.netlify.app';
+const runtimeEnv = {
+  SITE_ID: 'isolated-netlify-site',
+  PAYMENT_ALLOWED_ORIGIN: preview,
+};
 const req = (origin: string, host = new URL(origin).host) =>
   new Request('https://internal.example', { headers: { origin, host } });
-test('trusted origin allows exact preview and loopback, rejects arbitrary hosts', () => {
-  const preview = 'https://deploy-preview-4--deipo.netlify.app';
-  assert.equal(
-    trustedPaymentOrigin(req(preview), {
-      CONTEXT: 'deploy-preview',
-      DEPLOY_PRIME_URL: preview,
-    }),
-    preview,
+test('exact configured preview succeeds without build-time deploy metadata', () => {
+  assert.equal(trustedPaymentOrigin(req(preview), runtimeEnv), preview);
+});
+for (const origin of [
+  'https://deploy-preview-5--deipo.netlify.app',
+  'https://deploy-preview-4--other.netlify.app',
+  'https://evil.example',
+  'https://bydeipo.com',
+])
+  test(`configured preview rejects ${origin}`, () => {
+    assert.throws(() => trustedPaymentOrigin(req(origin), runtimeEnv), {
+      code: 'NOT_AUTHORIZED',
+    });
+  });
+for (const origin of [preview, 'https://bydeipo.com'])
+  test(`missing runtime allowlist rejects ${origin}`, () => {
+    assert.throws(
+      () => trustedPaymentOrigin(req(origin), { SITE_ID: runtimeEnv.SITE_ID }),
+      { code: 'NOT_AUTHORIZED' },
+    );
+  });
+test('Host mismatch fails even with matching forwarded Host', () => {
+  const request = req(preview, 'evil.example');
+  request.headers.set('x-forwarded-host', new URL(preview).host);
+  assert.throws(() => trustedPaymentOrigin(request, runtimeEnv), {
+    code: 'NOT_AUTHORIZED',
+  });
+});
+test('missing Host fails closed', () => {
+  const request = req(preview);
+  request.headers.delete('host');
+  assert.throws(() => trustedPaymentOrigin(request, runtimeEnv), {
+    code: 'NOT_AUTHORIZED',
+  });
+});
+test('cross-site request fails despite exact origin and Host', () => {
+  const request = req(preview);
+  request.headers.set('sec-fetch-site', 'cross-site');
+  assert.throws(() => trustedPaymentOrigin(request, runtimeEnv), {
+    code: 'NOT_AUTHORIZED',
+  });
+});
+for (const raw of [
+  undefined,
+  '',
+  'null',
+  'not a URL',
+  `${preview}/`,
+  `${preview}/path`,
+  `${preview}?query=1`,
+  `${preview}#hash`,
+  'https://user@deploy-preview-4--deipo.netlify.app',
+  'https://DEPLOY-PREVIEW-4--deipo.netlify.app',
+  'https://deploy-preview-4--deipo.netlify.app:443',
+])
+  test(`invalid or noncanonical Origin fails: ${raw}`, () => {
+    const request = req(preview);
+    if (raw === undefined) request.headers.delete('origin');
+    else request.headers.set('origin', raw);
+    assert.throws(() => trustedPaymentOrigin(request, runtimeEnv), {
+      code: 'NOT_AUTHORIZED',
+    });
+  });
+for (const configured of [
+  '',
+  'not a URL',
+  'null',
+  `${preview}/`,
+  `${preview}/path`,
+  `${preview}?query=1`,
+  `${preview}#hash`,
+  'https://user@deploy-preview-4--deipo.netlify.app',
+  'https://*.netlify.app',
+  'http://deploy-preview-4--deipo.netlify.app',
+])
+  test(`malformed or unsafe configured origin fails: ${configured}`, () => {
+    assert.throws(
+      () =>
+        trustedPaymentOrigin(req(preview), {
+          ...runtimeEnv,
+          PAYMENT_ALLOWED_ORIGIN: configured,
+        }),
+      { code: 'NOT_AUTHORIZED' },
+    );
+  });
+for (const host of ['localhost', '127.0.0.1', '[::1]']) {
+  const local = `http://${host}:3000`;
+  test(`HTTP loopback ${host} succeeds outside Netlify`, () => {
+    assert.equal(trustedPaymentOrigin(req(local), {}), local);
+  });
+  test(`HTTPS loopback ${host} fails even when explicitly configured`, () => {
+    const origin = `https://${host}:3000`;
+    assert.throws(
+      () =>
+        trustedPaymentOrigin(req(origin), {
+          PAYMENT_ALLOWED_ORIGIN: origin,
+        }),
+      { code: 'NOT_AUTHORIZED' },
+    );
+  });
+  for (const marker of [{ NETLIFY: 'true' }, { SITE_ID: runtimeEnv.SITE_ID }])
+    test(`loopback ${host} fails on Netlify with ${Object.keys(marker)[0]}`, () => {
+      assert.throws(
+        () =>
+          trustedPaymentOrigin(req(local), {
+            ...marker,
+            PAYMENT_ALLOWED_ORIGIN: local,
+          }),
+        { code: 'NOT_AUTHORIZED' },
+      );
+    });
+}
+test('non-loopback HTTP cannot be enabled by configured origin', () => {
+  const origin = 'http://evil.example';
+  assert.throws(
+    () =>
+      trustedPaymentOrigin(req(origin), {
+        PAYMENT_ALLOWED_ORIGIN: origin,
+      }),
+    { code: 'NOT_AUTHORIZED' },
   );
-  assert.equal(
-    trustedPaymentOrigin(req('http://localhost:3000'), {}),
-    'http://localhost:3000',
-  );
-  assert.throws(() => trustedPaymentOrigin(req('https://evil.example'), {}));
-  assert.throws(() =>
-    trustedPaymentOrigin(req(preview), {
-      CONTEXT: 'deploy-preview',
-      DEPLOY_PRIME_URL: 'https://deploy-preview-5--deipo.netlify.app',
-    }),
-  );
-  assert.throws(() =>
-    trustedPaymentOrigin(req('https://bydeipo.com'), { CONTEXT: 'production' }),
-  );
-  assert.throws(() =>
-    trustedPaymentOrigin(req('http://localhost:3000'), { NETLIFY: 'true' }),
-  );
-  assert.throws(() =>
-    trustedPaymentOrigin(req('https://bydeipo.com', 'evil.example'), {}),
-  );
+});
+test('Production endpoint cannot initiate Sandbox payments without a runtime origin', async (t) => {
+  const previous = { ...process.env };
+  const fetcher = t.mock.method(globalThis, 'fetch', async () => {
+    throw Error('Production must not reach Supabase or Recurrente');
+  });
+  try {
+    Object.assign(process.env, env, {
+      SITE_ID: runtimeEnv.SITE_ID,
+      NEXT_PUBLIC_SITE_MODE: 'production',
+    });
+    delete process.env.PAYMENT_ALLOWED_ORIGIN;
+    delete process.env.CONTEXT;
+    delete process.env.DEPLOY_PRIME_URL;
+    const response = await paymentCheckout(
+      new NextRequest('https://bydeipo.com/api/payments/recurrente/checkout', {
+        method: 'POST',
+        headers: { origin: 'https://bydeipo.com', host: 'bydeipo.com' },
+      }),
+    );
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      error: 'Solicitud no autorizada.',
+    });
+    assert.equal(fetcher.mock.callCount(), 0);
+  } finally {
+    for (const key of Object.keys(process.env))
+      if (!(key in previous)) delete process.env[key];
+    Object.assign(process.env, previous);
+  }
 });
 const secret =
   'whsec_' +

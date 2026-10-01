@@ -2,7 +2,7 @@
 
 Consult the connected Wichiss Second Brain before substantial changes. The DEIPO MOC, current status, decisions and locked Brand System are canonical. Do not copy private vault contents into this public repository.
 
-- Current scope: DEIPO OS Sprint 02 Orders + Inventory Holds on the approved Sprint 01 foundation. See docs/deipo-os-sprint-02.md. Payments, CRM, kitchen and WhatsApp remain deferred. Keep public ordering gated off; preserve storefront/Admin visuals.
+- Current scope: DEIPO OS Sprint 03 Sandbox payments on the approved Sprint 01/02 foundation. See docs/deipo-os-sprint-03.md. LIVE payments, CRM, kitchen and WhatsApp remain deferred. Keep public ordering gated off; preserve storefront/Admin visuals.
 - Consumer wordmark is `deipo.` with an orange full stop. Never use the historical working name for new assets.
 - Brand palette: cream `#F5F1E8`, matte black `#121212`, orange `#D3401F`, functional white.
 - No emojis in the interface, content or documentation. Use simple SVG icons for directional UI.
@@ -19,7 +19,7 @@ Consult the connected Wichiss Second Brain before substantial changes. The DEIPO
 - Keep approved logo assets replaceable. Use the supplied standalone artwork without redrawing it; do not trace a logo from a raster brand board.
 - Run lint, typecheck, unit tests and a production build after meaningful code changes. Browser checks should cover relevant journeys and responsive layouts.
 - Write back durable implementation decisions and unresolved items to the existing DEIPO notes, preserving historical context.
-- Remote publication needs explicit authorization in the current session. Historical push authorizations do not authorize pushing Sprint 02.
+- Remote publication needs explicit authorization in the current session. Historical push authorizations do not authorize pushing Sprint 03.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

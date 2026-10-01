@@ -21,7 +21,8 @@ for (const width of [320, 375, 390, 430, 768, 1024, 1280, 1440]) {
     await page.goto('/');
     await page.evaluate(() => document.fonts.ready);
     await expect(page.locator('h1')).toHaveText('SUNDAY ROAST');
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    // Hydration/font swaps can briefly change the measured document width.
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await expect(page.getByText('VISTA PREVIA', { exact: true }).first()).toBeVisible();
     if (width === 390 || width === 1440) {
       await page.locator('.box-image').scrollIntoViewIfNeeded();

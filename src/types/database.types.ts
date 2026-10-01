@@ -644,6 +644,179 @@ export type Database = {
           },
         ]
       }
+      payment_attempts: {
+        Row: {
+          amount_minor: number
+          attempt_number: number
+          checkout_url: string | null
+          created_at: string
+          currency: string
+          environment: string
+          expires_at: string
+          failure_code: string | null
+          failure_message: string | null
+          id: string
+          internal_status: string
+          order_id: string
+          payment_method_type: string | null
+          provider: string
+          provider_checkout_id: string | null
+          provider_created_at: string | null
+          provider_failed_at: string | null
+          provider_intent_id: string | null
+          provider_payment_id: string | null
+          provider_pending_at: string | null
+          provider_raw_status: string | null
+          provider_status: string | null
+          provider_succeeded_at: string | null
+          resolution_status: string
+          review_reason: string | null
+          sandbox_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_minor: number
+          attempt_number: number
+          checkout_url?: string | null
+          created_at?: string
+          currency: string
+          environment: string
+          expires_at: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          internal_status?: string
+          order_id: string
+          payment_method_type?: string | null
+          provider?: string
+          provider_checkout_id?: string | null
+          provider_created_at?: string | null
+          provider_failed_at?: string | null
+          provider_intent_id?: string | null
+          provider_payment_id?: string | null
+          provider_pending_at?: string | null
+          provider_raw_status?: string | null
+          provider_status?: string | null
+          provider_succeeded_at?: string | null
+          resolution_status?: string
+          review_reason?: string | null
+          sandbox_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number
+          attempt_number?: number
+          checkout_url?: string | null
+          created_at?: string
+          currency?: string
+          environment?: string
+          expires_at?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          internal_status?: string
+          order_id?: string
+          payment_method_type?: string | null
+          provider?: string
+          provider_checkout_id?: string | null
+          provider_created_at?: string | null
+          provider_failed_at?: string | null
+          provider_intent_id?: string | null
+          provider_payment_id?: string | null
+          provider_pending_at?: string | null
+          provider_raw_status?: string | null
+          provider_status?: string | null
+          provider_succeeded_at?: string | null
+          resolution_status?: string
+          review_reason?: string | null
+          sandbox_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_attempts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "admin_order_state"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_attempts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_webhook_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          id: string
+          live_mode: boolean | null
+          payload: Json
+          payload_sha256: string
+          payment_attempt_id: string | null
+          payment_type: string | null
+          processed_at: string | null
+          processing_error: string | null
+          processing_status: string
+          provider: string
+          provider_checkout_id: string | null
+          provider_intent_id: string | null
+          received_at: string
+          sandbox_id: string | null
+          svix_id: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          id?: string
+          live_mode?: boolean | null
+          payload: Json
+          payload_sha256: string
+          payment_attempt_id?: string | null
+          payment_type?: string | null
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
+          provider?: string
+          provider_checkout_id?: string | null
+          provider_intent_id?: string | null
+          received_at?: string
+          sandbox_id?: string | null
+          svix_id: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          id?: string
+          live_mode?: boolean | null
+          payload?: Json
+          payload_sha256?: string
+          payment_attempt_id?: string | null
+          payment_type?: string | null
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
+          provider?: string
+          provider_checkout_id?: string | null
+          provider_intent_id?: string | null
+          received_at?: string
+          sandbox_id?: string | null
+          svix_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_webhook_events_payment_attempt_id_fkey"
+            columns: ["payment_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "payment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prelaunch_sales: {
         Row: {
           confirmed_at: string
@@ -868,12 +1041,28 @@ export type Database = {
         Args: { p_checkout_session_hash: string; p_details: Json }
         Returns: Json
       }
+      customer_payment_state: {
+        Args: { p_session_hash: string }
+        Returns: Json
+      }
       get_checkout_state: {
         Args: { p_checkout_session_hash: string }
         Returns: Json
       }
       get_storefront_state: { Args: never; Returns: Json }
+      prepare_payment_checkout: {
+        Args: { p_sandbox_id: string; p_session_hash: string }
+        Returns: Json
+      }
+      process_payment_webhook: {
+        Args: { p_event_id: string; p_sandbox_id: string }
+        Returns: string
+      }
       publish_drop: { Args: { p_drop_id: string }; Returns: undefined }
+      receive_payment_webhook: {
+        Args: { p_payload: Json; p_sha256: string; p_svix_id: string }
+        Returns: string
+      }
       record_prelaunch_sale: {
         Args: {
           p_confirmed_at?: string
@@ -887,6 +1076,10 @@ export type Database = {
       release_inventory_hold: {
         Args: { p_checkout_session_hash: string }
         Returns: Json
+      }
+      save_payment_checkout: {
+        Args: { p_attempt_id: string; p_result: Json }
+        Returns: undefined
       }
       set_storefront_drop: {
         Args: { p_drop_id: string; p_slot: string }

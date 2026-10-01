@@ -576,3 +576,8 @@ input::placeholder { color: #777069; opacity: 1; }
 .live-checkout-main input,.live-checkout-main select,.live-checkout-main textarea { width:100%; min-height:48px; padding:12px; border:1px solid #12121280; border-radius:0; background:transparent; font:inherit; }
 .live-checkout-main fieldset { border:0; padding:0; min-width:0; }
 .live-checkout-main .text-link { margin-top:32px; min-height:44px; }
+
+/* Payment status uses the existing receipt scene with readable operational copy. */
+.payment-status h1 { font-size: clamp(36px, 7vw, 72px); max-width: 900px; overflow-wrap: anywhere; }
+.payment-status p { max-width: 620px; }
+.receipt-status small { color: var(--cream); font: inherit; }

@@ -3,3 +3,7 @@
 .admin-table-wrap { overflow-x:auto; }
 .admin-table { width:100%; border-collapse:collapse; font-size:12px; }
 .admin-table th,.admin-table td { padding:14px 10px; text-align:left; border-bottom:1px solid #12121230; }
+
+.admin-payment-list li { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; overflow-wrap: anywhere; }
+.admin-payment-list li > :first-child { grid-column: 1 / -1; }
+@media (max-width: 680px) { .admin-payment-list li { grid-template-columns: 1fr; } }

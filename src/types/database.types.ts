@@ -229,6 +229,7 @@ export type Database = {
       }
       drop_slots: {
         Row: {
+          max_units: number | null
           capacity: number | null
           created_at: string
           drop_id: string
@@ -240,6 +241,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          max_units?: number | null
           capacity?: number | null
           created_at?: string
           drop_id: string
@@ -251,6 +253,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          max_units?: number | null
           capacity?: number | null
           created_at?: string
           drop_id?: string
@@ -1021,6 +1024,29 @@ export type Database = {
       }
     }
     Functions: {
+      ops_set_operator: { Args: { p_user_id: string; p_role: string; p_active: boolean; p_reason: string }; Returns: undefined }
+      ops_configure_drop: { Args: { p_drop_id: string; p_config: Json; p_components: Json; p_reason: string }; Returns: undefined }
+      ops_provision: { Args: { p_order_id: string }; Returns: string }
+      ops_transition: { Args: { p_id: string; p_version: number; p_to: string; p_reason?: string | null; p_sealed?: boolean; p_override?: boolean }; Returns: number }
+      ops_check_packing: { Args: { p_id: string; p_component: string; p_quantity: number }; Returns: undefined }
+      ops_create_wave: { Args: { p_drop_id: string; p_sequence: number; p_units: number; p_target: string }; Returns: string }
+      ops_wave_action: { Args: { p_wave_id: string; p_action: string }; Returns: undefined }
+      ops_assign_wave: { Args: { p_id: string; p_wave_id: string }; Returns: undefined }
+      ops_record_production: { Args: { p_wave_id: string; p_kind: string; p_quantity: number; p_request_id: string; p_reason: string }; Returns: string }
+      ops_assign_driver: { Args: { p_id: string; p_driver: string; p_reason: string }; Returns: undefined }
+      ops_open_issue: { Args: { p_id: string; p_reason: string }; Returns: string }
+      ops_resolve_issue: { Args: { p_issue_id: string; p_resolution: string }; Returns: undefined }
+      ops_override_logistics: { Args: { p_id: string; p_logistics: Json; p_reason: string }; Returns: string }
+      ops_rotate_access: { Args: { p_id: string; p_hash: string; p_expires_at: string }; Returns: undefined }
+      ops_revoke_access: { Args: { p_id: string }; Returns: undefined }
+      ops_update_schedule: { Args: { p_drop_id: string; p_cutoff: string | null; p_prep_minutes: number | null; p_delivery_minutes: number | null; p_grace_minutes: number; p_reason: string }; Returns: undefined }
+      ops_queue: { Args: { p_drop_id: string; p_expected_role?: string }; Returns: Json }
+      ops_waves: { Args: { p_drop_id: string }; Returns: Json }
+      ops_timeline: { Args: { p_id: string }; Returns: Json }
+      ops_command_center: { Args: Record<PropertyKey, never>; Returns: Json }
+      ops_customer_tracker: { Args: { p_hash: string }; Returns: Json }
+      ops_current_role: { Args: Record<PropertyKey, never>; Returns: string | null }
+
       admin_cancel_pending_order: {
         Args: { p_order_id: string; p_reason: string }
         Returns: undefined

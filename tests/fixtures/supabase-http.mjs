@@ -1,7 +1,7 @@
 // Isolated browser-contract fixture. Never connects to a Supabase project.
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { operationsSnapshot } from './operations-db.mjs';
+import { operationsSnapshot,opsBridge,opsFixtureUser } from './operations-db.mjs';
 let opsMode='empty';
 const founder='00000000-0000-4000-8000-000000000001';
 const nonadmin='00000000-0000-4000-8000-000000000002';
@@ -24,7 +24,7 @@ const server=http.createServer(async(req,res)=>{
  if(url.pathname==='/reset'){reset();opsMode='empty';return send({});}
  if(url.pathname==='/ops-current'){opsMode='current';return send({});}
  if(url.pathname==='/ops-error'){opsMode='error';return send({});}
- if(url.pathname.endsWith('/token')){if(body.refresh_token==='expired')return send({code:'refresh_token_not_found',msg:'Refresh token revoked'},400);if(body.password&&body.password!=='fixture-password')return send({msg:'Invalid login credentials'},400);return send(session(body.refresh_token || (body.email==='reader@example.test'?nonadmin:founder)));}
+ if(url.pathname.endsWith('/token')){if(body.refresh_token==='expired')return send({code:'refresh_token_not_found',msg:'Refresh token revoked'},400);if(body.password&&body.password!=='fixture-password')return send({msg:'Invalid login credentials'},400);let staff;if(body.email?.endsWith('@ops.example.test'))staff=await opsFixtureUser(body.email.split('@')[0]);return send(session(body.refresh_token || staff || (body.email==='reader@example.test'?nonadmin:founder)));}
  if(url.pathname.endsWith('/user'))return id?send(user(id)):send({msg:'Unauthorized'},401);
  if(url.pathname.endsWith('/logout'))return send({});
  if(url.pathname.includes('/.well-known/'))return send({keys:[]});
@@ -33,6 +33,7 @@ const server=http.createServer(async(req,res)=>{
   const rpc=url.pathname.split('/').at(-1);const d=rows.drops.find(d=>d.id===body.p_drop_id);
   if(rpc==='get_storefront_state'&&failPublic)return send({message:'Fixture unavailable'},503);
   if(rpc==='get_storefront_state')return send({current:payload(rows.storefront_config[0].current_drop_id),next:payload(rows.storefront_config[0].next_drop_id)});
+  if(rpc.startsWith('ops_')&&rpc!=='ops_command_center'){try{return send(await opsBridge(rpc,body,id));}catch(e){return send({message:e.message},403);}}
   if(id!==founder)return send({message:'Not authorized'},403);
   if(rpc==='ops_command_center'){if(!active)return send({message:'Not authorized'},403);if(opsMode==='error')return send({message:'Unavailable'},503);try{return send(await operationsSnapshot(opsMode));}catch{return send({message:'Local operations database unavailable'},503);}}
   if(rpc==='record_prelaunch_sale'){if(body.p_quantity>inventory(d).available)return send({message:'capacity exceeded'},400);const s={id:randomUUID(),drop_id:d.id,quantity:body.p_quantity,source:body.p_source,note:body.p_note,confirmed_at:body.p_confirmed_at||new Date().toISOString(),voided_at:null};rows.prelaunch_sales.push(s);audit('prelaunch_sale_added',d.id);return send(s.id);}

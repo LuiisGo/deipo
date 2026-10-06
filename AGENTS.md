@@ -2,7 +2,7 @@
 
 Consult the connected Wichiss Second Brain before substantial changes. The DEIPO MOC, current status, decisions and locked Brand System are canonical. Do not copy private vault contents into this public repository.
 
-- Current scope: DEIPO OS Sprint 04A Operations & Fulfillment Foundation on main 67099f7 (Sprint 03 CLOSED / Sandbox accepted). See docs/deipo-os-sprint-04.md. Operational schema/RBAC/engine and founder Command Center only; full Kitchen/Packing/Driver/tracker UI and WhatsApp remain deferred. LIVE and Production ordering stay OFF; preserve the acceptance environment and all Production data. Local commit only: no push, PR, deploy or Production migration. Stop at 04A.
+- Current scope: DEIPO OS Sprint 04B Kitchen/Packing/Fulfillment/Driver on feat/deipo-os-sprint-04-operations, continuing checkpoint ac917cb. See docs/deipo-os-sprint-04.md. Preserve 001–020; 04B starts at 021. Explicit paid sync, transactional slot limits, original delivery pins, staff invitations and dedicated Ops tools are authorized locally. LIVE and Production ordering stay OFF; preserve acceptance and Production data. Local commit only: no push, PR, deploy, remote migrations or environment changes. Stop at 04B; 04C is not authorized.
 - Consumer wordmark is `deipo.` with an orange full stop. Never use the historical working name for new assets.
 - Brand palette: cream `#F5F1E8`, matte black `#121212`, orange `#D3401F`, functional white.
 - No emojis in the interface, content or documentation. Use simple SVG icons for directional UI.
@@ -17,13 +17,14 @@ Consult the connected Wichiss Second Brain before substantial changes. The DEIPO
 - Production contact/fulfillment snapshots live only in private transactional tables. Never put PII or checkout tokens in analytics, logs, URLs or public DTOs. Preview receipt data remains in memory.
 - Preserve supplied `images/` reference files; they are ignored by Git. Public optimized assets are under `public/`.
 - Keep approved logo assets replaceable. Use the supplied standalone artwork without redrawing it; do not trace a logo from a raster brand board.
-- Operations are separate from orders/payment/inventory. Only paid, payment-committed, unreleased inventory enters normal operations. Lazy provisioning is unique per order; never change the Sprint 03 finalizer without new evidence and regressions.
+- Operations are separate from orders/payment/inventory. Only paid, payment-committed, unreleased inventory enters normal operations. Explicit synchronization provisions uniquely per order; queue reads are pure; the 021 finalizer adds only a slot-capacity gate for late payments, preserving Sprint 03 protocol and review behavior.
 - Keep operator_profiles separate from admin_profiles. Kitchen sees no PII/payment/revenue; drivers see only assigned deliveries. All operational writes use JWT-authenticated controlled RPCs, never public tracker possession.
 - PACKED requires the frozen component checklist and explicit security seal. Founder overrides preserve original snapshots and append actor/time/reason; operational cancellation never performs a refund or inventory release.
 - Tracker tokens use 32 random bytes and SHA-256 at rest; short order codes are not secrets. The future /order route requires no-store, no-referrer, no analytics and URL redaction before release; 04A adds no public tracker route.
+- Staff invitations require server-only SUPABASE_SECRET_KEY and fixed STAFF_INVITE_ORIGIN; never derive permissions from Auth metadata or expose service credentials. Scanner identifiers never authorize fulfillment; JWT + SQL role/state/version do.
 - Run lint, typecheck, unit tests and a production build after meaningful code changes. Browser checks should cover relevant journeys and responsive layouts.
 - Write back durable implementation decisions and unresolved items to the existing DEIPO notes, preserving historical context.
-- Remote publication needs explicit authorization in the current session. Historical push authorizations do not authorize pushing Sprint 04A.
+- Remote publication needs explicit authorization in the current session. Historical push authorizations do not authorize pushing Sprint 04B.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

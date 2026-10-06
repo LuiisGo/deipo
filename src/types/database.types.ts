@@ -541,6 +541,8 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           customer_phone: string
+          delivery_latitude: number | null
+          delivery_longitude: number | null
           delivery_address: string | null
           delivery_fee_minor: number
           delivery_notes: string | null
@@ -571,6 +573,8 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           customer_phone: string
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
           delivery_address?: string | null
           delivery_fee_minor: number
           delivery_notes?: string | null
@@ -601,6 +605,8 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
           delivery_address?: string | null
           delivery_fee_minor?: number
           delivery_notes?: string | null
@@ -1024,6 +1030,14 @@ export type Database = {
       }
     }
     Functions: {
+      ops_save_operator: { Args: { p_user_id:string;p_role:string;p_active:boolean;p_name:string;p_reason:string }; Returns:undefined }
+      ops_operators: { Args:Record<PropertyKey,never>;Returns:Json }
+      ops_drops: { Args:Record<PropertyKey,never>;Returns:Json }
+      ops_sync_paid_orders: { Args:{p_drop_id:string};Returns:Json }
+      ops_bulk_wave: { Args:{p_drop_id:string;p_wave_id:string;p_orders:Json;p_action:string};Returns:number }
+      ops_pack_check: { Args:{p_id:string;p_version:number;p_component:string;p_quantity:number};Returns:number }
+      ops_issues: { Args:{p_id:string};Returns:Json }
+      ops_lookup: { Args:{p_drop_id:string;p_code?:string|null;p_hash?:string|null};Returns:string|null }
       ops_set_operator: { Args: { p_user_id: string; p_role: string; p_active: boolean; p_reason: string }; Returns: undefined }
       ops_configure_drop: { Args: { p_drop_id: string; p_config: Json; p_components: Json; p_reason: string }; Returns: undefined }
       ops_provision: { Args: { p_order_id: string }; Returns: string }

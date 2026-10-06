@@ -21,7 +21,7 @@ export async function mutateDrop(id: string, operation: string, form: FormData) 
     }
     case 'scheduled': case 'archived': case 'cancelled': result = await client.from('drops').update({ lifecycle_status:operation }).eq('id',id).select('id').single(); break;
     case 'slot': {
-      const data = { starts_at:text(form,'starts_at'), ends_at:text(form,'ends_at'), capacity:text(form,'capacity') ? integer(form,'capacity',1) : null, ...common };
+      const data = { starts_at:text(form,'starts_at'), ends_at:text(form,'ends_at'), capacity:text(form,'capacity') ? integer(form,'capacity',1) : null, max_units:text(form,'max_units') ? integer(form,'max_units',1) : null, ...common };
       result = rowId ? await client.from('drop_slots').update(data).eq('id',rowId).eq('drop_id',id).select('id').single() : await client.from('drop_slots').insert({drop_id:id,...data}); break;
     }
     case 'zone': {

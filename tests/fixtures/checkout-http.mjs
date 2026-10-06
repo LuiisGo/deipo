@@ -30,6 +30,15 @@ http.createServer(async(req,res)=>{const send=(x,status=200)=>{res.writeHead(sta
  }
  if(path.pathname==='/payment-stats')return send((await pool.query('select (select count(*) from public.payment_attempts a join public.orders o on o.id=a.order_id join public.inventory_holds h on h.id=o.hold_id where h.drop_id=$1) attempts,(select count(*) from public.payment_webhook_events) inbox',[current])).rows[0]);
  if(path.pathname==='/reset'){await reset();return send({id:current});}
+ if(path.pathname==='/delivery-setup'){
+ const c=await pool.connect();try{await c.query('begin');
+ const full=(await c.query("insert into public.drop_slots(drop_id,starts_at,ends_at,capacity) values($1,'18:00','19:00',1) returning id",[current])).rows[0].id;
+ const free=(await c.query("insert into public.drop_slots(drop_id,starts_at,ends_at,capacity,max_units) values($1,'19:00','20:00',2,3) returning id",[current])).rows[0].id;
+ const zone=(await c.query("insert into public.drop_delivery_zones(drop_id,code,label,fee_minor) values($1,'z10','Zona 10',0) returning id",[current])).rows[0].id;
+ const hash=randomUUID().replaceAll('-','').repeat(2);await c.query('select public.create_inventory_hold($1,1,$2)',[current,hash]);
+ await c.query('select public.create_pending_order_from_hold($1,$2)',[hash,{name:'Other synthetic buyer',phone:'+50255551234',method:'pickup',slot_id:full}]);
+ await c.query('commit');return send({full,free,zone});}finally{await c.query('rollback');c.release();}
+ }
  if(path.pathname==='/close-soon'){await pool.query(`update public.drops set orders_close_at=now()+interval '5 seconds' where id=$1`,[current]);return send({});}
  if(path.pathname==='/disable'){await pool.query('update public.drops set online_ordering_enabled=false where id=$1',[current]);return send({});}
  if(path.pathname==='/stats'){return send((await pool.query(`select (select row_to_json(i) from public.drop_inventory i where drop_id=$1) inventory,(select json_agg(json_build_object('hash',checkout_session_hash,'expires_at',expires_at)) from public.inventory_holds where drop_id=$1) holds`,[current])).rows[0]);}

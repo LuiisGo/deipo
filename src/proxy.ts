@@ -5,7 +5,7 @@ import { supabaseConfig } from '@/lib/supabase/config';
 import { authCookieOptions } from '@/lib/supabase/cookie-options';
 import { hasSupabaseSessionCookie } from '@/lib/supabase/session-cookies';
 export async function proxy(request: NextRequest) {
-  if (!request.nextUrl.pathname.startsWith('/admin')) {
+  if (!request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/ops')) {
     let token = request.cookies.get(checkoutCookieName)?.value;
     if (!validCheckoutToken(token)) {
       token = newCheckoutToken();
@@ -42,4 +42,4 @@ export async function proxy(request: NextRequest) {
   response.headers.set('Expires', '0');
   return response;
 }
-export const config = { matcher: ['/admin/:path*','/','/checkout'] };
+export const config = { matcher: ['/admin/:path*','/ops/:path*','/','/checkout'] };

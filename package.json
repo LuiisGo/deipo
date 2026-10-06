@@ -16,7 +16,8 @@
     "test:payments": "node --conditions=react-server --import tsx --test tests/payments/*.test.ts",
     "test:payments:db": "node scripts/test-payments-db.mjs",
     "test:operations": "node --conditions=react-server --import tsx --test tests/operations/*.test.ts",
-    "test:operations:db": "node scripts/test-operations-db.mjs"
+    "test:operations:db": "node scripts/test-operations-db.mjs",
+    "test:operations:04b:db": "node scripts/test-operations-04b-db.mjs"
   },
   "dependencies": {
     "@fontsource/anton": "^5.2.8",

@@ -1,3 +1,4 @@
+import {SyncPaid} from "@/components/ops/sync";
 import Link from "next/link";
 import { RefreshOperations } from "@/components/admin/refresh-operations";
 import { commandCenter } from "@/lib/deipo/repositories/operations";
@@ -18,6 +19,8 @@ export default async function Operations() {
         </div>
         <RefreshOperations />
       </div>
+      <nav className="admin-actions"><Link href="/ops/kitchen">Cocina</Link><Link href="/ops/fulfillment">Packing y fulfillment</Link><Link href="/admin/operations/staff">Equipo</Link></nav>
+      {drop&&<SyncPaid dropId={drop.id}/>}
       {!drop || !metrics ? (
         <section>
           <h2>Sin drop actual</h2>

@@ -41,3 +41,25 @@ export async function operationsSnapshot(mode) {
     await client.end();
   }
 }
+
+// 04B bridge uses the real RPC and JWT role in a disposable local DB.
+export async function opsBridge(name,args={},userId){
+ const url=process.env.DEIPO_TEST_DATABASE_URL;
+ if(!url||!['localhost','127.0.0.1','[::1]'].includes(new URL(url).hostname))throw Error('Local fixture required');
+ if(!/^ops_[a-z_]+$/.test(name))throw Error('RPC not supported');
+ const c=new pg.Client({connectionString:url});await c.connect();
+ try{
+ const signature=(await c.query("select proargnames from pg_proc where pronamespace='public'::regnamespace and proname=$1",[name])).rows[0];
+ if(!signature)throw Error('Unknown RPC');
+ const names=signature.proargnames??[];
+ const params=names.map(n=>args[n]===undefined?null:typeof args[n]==='object'?JSON.stringify(args[n]):args[n]);
+ await c.query("select set_config('request.jwt.claim.sub',$1,false)",[userId??'']);await c.query('set role authenticated');
+ return (await c.query(`select public.${name}(${names.map((_,i)=>'$'+(i+1)).join(',')}) v`,params)).rows[0].v;
+ }finally{await c.end();}
+}
+export async function opsFixtureUser(name){
+ const url=process.env.DEIPO_TEST_DATABASE_URL;
+ if(!url||!['localhost','127.0.0.1','[::1]'].includes(new URL(url).hostname))throw Error('Local fixture required');
+ const c=new pg.Client({connectionString:url});await c.connect();
+ try{return (await c.query('select user_id from public.operator_profiles where display_name=$1 order by created_at desc limit 1',[`04B ${name}`])).rows[0]?.user_id;}finally{await c.end();}
+}

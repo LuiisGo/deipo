@@ -369,3 +369,318 @@ unidad y plan de packing, fechas/cutoff, cupos por slot y enforcement, zonas/fee
 lead times, tandas, usuarios invitados y drivers, expiración/retención de acceso y
 PII, proceso de cambios de recipe plan, y resolución financiera de cancelaciones.
 La aceptación local no equivale a migración ni aceptación operativa remota.
+
+---
+
+## 2026-10-06 — Sprint 04B: operación móvil (historia posterior a 04A)
+
+El brief 04B autoriza continuar **la misma rama** desde
+`ac917cb76f82699c74cd65e13d3fe590f26d389f`. Reemplaza únicamente el límite de
+alcance que detenía 04A. Se conserva arriba su historia completa. No se modifican
+001–020, no se ejecutan migraciones remotas, no se publica código ni se configura
+el entorno remoto. Production ordering y Recurrente LIVE siguen sin activarse.
+La base main de referencia permanece `67099f7d847764941412900296cb938c88c989a0`.
+
+### Migraciones y cambios de arquitectura
+
+| Archivo nuevo | SHA-256 |
+|---|---|
+| `20261006010000_021_slot_capacity_delivery_pin.sql` | `07faa8fbd723356d6a769c945243de870b92b01c0e68900e80ad9ac6dff73181` |
+| `20261006011000_022_operations_workflows.sql` | `03872538c461dff183ea5309e16e4ee5c2c2766d07a3aeccc766cb6a58b17124` |
+
+Los hashes019/020 siguen siendo los del checkpoint04A. No hay una segunda verdad
+de inventario ni estados Kitchen en `orders.status`. La nueva validación logística
+reutiliza pedidos/holds; el inventario sigue derivándose en `drop_inventory`.
+
+021 añade `orders.delivery_latitude` / `delivery_longitude`, constraint de pareja,
+rangos y exclusión en pickup. Históricos quedan null, sin backfill inventado.
+El trigger existente `order_facts_immutable` ya compara todas las columnas que no
+son de lifecycle: también impide cambiar las coordenadas nuevas. La creación de
+**nuevos** pedidos delivery requiere dirección y ambas coordenadas. Un retry de un
+pedido histórico idéntico mantiene el contrato previo. Checkout incluye entrada
+numérica de coordenadas; el pin-picker gráfico es pendiente04C, sin proveedor pago.
+Los overlays operativos usan sus propias coordenadas; nunca sobrescriben el original.
+
+022 añade `operator_profiles.display_name`: trimmed, 1–100 caracteres, no interviene
+en permisos. El default de compatibilidad `Pendiente de identificar` obliga a la
+preparación humana antes de operar, sin inferir nombres/roles de Auth metadata.
+El rol y la activación siguen en `operator_profiles`; exclusión con Admin intacta.
+
+### Cupo transaccional exacto
+
+`drop_slots.capacity` limita **pedidos**, `max_units` limita unidades cuando no es
+null. Null significa sin límite configurado; no se siembra35 ni un tamaño de tanda.
+La pantalla de configuración Admin permite ambos límites explícitos.
+
+Para un slot se cuentan únicamente pedidos con `inventory_released_at IS NULL` y:
+
+- `status = pending_payment`, sin compromiso de inventario, con hold `active` y
+  `expires_at > clock_timestamp()`; o
+- `status = paid` y `inventory_committed_at IS NOT NULL`.
+
+Cada pedido cuenta una vez y sus unidades vienen de su hold inmutable. No cuentan
+cancelados, expirados, reservas vencidas aunque el estado persistido siga active,
+inventario liberado, otros slots ni fichas operativas como un inventario paralelo.
+Las preventas sin pedido/slot no se asignan automáticamente a logística.
+
+Se mantiene el lock de checkout **session → drop row → hold → order**. Dos sesiones
+que compiten por cupo esperan el mismo drop; el conteo se ejecuta tras ese lock.
+Retry idéntico se resuelve antes del cupo y no consume otra plaza. `SLOT_FULL`
+revierte la creación del pedido, conserva el hold vigente y permite elegir otro slot.
+El DTO customer solo agrega `available` por horario, calculado para la cantidad del
+hold y excluyendo su propio pedido en retries. Es orientativo: SQL decide al guardar.
+
+**Evidencia que justifica tocar el finalizador:** una reserva vencida deja libre
+logística, pero el éxito del proveedor puede llegar después. 021 reemplaza la
+función018 conservando todo su cuerpo salvo una comprobación de cupo antes del
+branch existente review/commit. Mantiene inbox → session → drop → hold → order →
+attempt, sin adquirir locks operativos. Si otro comprador ocupó el horario, conserva
+el éxito como hecho financiero y usa `PAYMENT_RECEIVED_SLOT_FULL` / review_required;
+no compromete inventario, no crea fulfillment y no reembolsa automáticamente.
+No se reprocesa historia ni se relaja la validación Sandbox de018.
+
+### Sync explícito y funciones
+
+`ops_queue` y Command Center ahora son lecturas puras. Se retira la reconciliación
+lazy de04A en la nueva migración. La UI ofrece **SINCRONIZAR PEDIDOS PAGADOS** en
+Founder y Fulfillment, con scanned/already_present/provisioned. No hay cron ni polling
+nuevo. Kitchen debe recibir una cola previamente sincronizada.
+
+`ops_sync_paid_orders(drop_id)` exige founder/admin/fulfillment y toma el advisory
+operativo del drop; enumera órdenes por UUID y reutiliza `ops_provision` con su lock
+de pedido, elegibilidad paid/commit/attempt y unicidad. Repeticiones/concurrencia
+no duplican fichas, checklist ni eventos. Un pago que aún no era visible durante
+el scan entra en la siguiente sincronización; no se presenta como outbox automático.
+
+Nuevos RPCs públicos, todos invoker con implementación private definer y grants
+explícitos solo authenticated:
+
+- `ops_save_operator`, `ops_operators`, `ops_drops`.
+- `ops_sync_paid_orders`.
+- `ops_bulk_wave`, `ops_pack_check`.
+- `ops_issues`, `ops_lookup`.
+
+Funciones reemplazadas: `private.create_pending_order_from_hold_entry`,
+`private.checkout_payload`, `private.process_payment_webhook`,
+`private.ops_queue`, `private.ops_role`, `private.ops_require`,
+`private.ops_transition`. Nuevos helpers sin execute cliente:
+`private.slot_occupancy`, `private.slot_has_room`.
+Los RPCs de04A restantes se conservan; las nuevas pantallas usan packing versionado.
+
+`ops_bulk_wave`: de1 a200 pedidos de un único drop, IDs únicos, locks ordenados por
+order_id/fulfillment_id después del advisory de drop, versión esperada para cada
+ficha. Asignar o preparar ocurre **todo o nada**. Reutiliza cupo de tanda y máquina
+de estados04A. Un stale/cupo insuficiente revierte toda la selección.
+`ops_pack_check` valida versión antes de cambiar un componente y aumenta versión.
+`ops_transition` vuelve a consultar el rol tras esperar, además de la asignación.
+
+### Invitación y acceso del personal
+
+Rutas: `/admin/operations/staff` (solo founder), `/ops/login`, `/ops/accept`, `/ops`,
+y `/ops/kitchen`, `/ops/fulfillment`, `/ops/driver` mediante segmento validado.
+Endpoints server-only: `/api/ops` y `/api/ops/staff`. Son no-store, con comprobación
+de origen, usuario verificado y lista explícita de acciones/roles; SQL repite RBAC.
+No se despacha un RPC arbitrario suministrado por el navegador.
+
+Founder invita por email, asigna nombre/rol, activa/desactiva y cambia rol con motivo
+auditado. Auth Admin SDK corre únicamente en servidor. Para recuperarse de una
+invitación enviada cuyo perfil no pudo guardarse, se busca el email exacto en Auth
+(solo servidor) y se reintenta la provisión con JWT founder. Una cuenta Auth por sí
+sola no recibe permisos. La UI no enumera usuarios Auth ni expone sus internals.
+Muestra solo estado derivado: invitación pendiente / sesión iniciada / no disponible.
+Reenvío está limitado a perfiles con invitación aún pendiente; se usa la invitación
+nativa y se informa si el proveedor no permite reinvitar. No se reemplaza contraseña,
+no se genera una cuenta pública, no se manda email desde otro servicio.
+
+Configuración requerida **antes de una futura aceptación de invitaciones**:
+
+- `SUPABASE_SECRET_KEY` server-only en runtime (sí, requerido para invitar).
+- `STAFF_INVITE_ORIGIN`: origen HTTPS exacto sin path ni slash final, independiente
+  de Host y de la allowlist de pagos.
+- Supabase Auth con signup público deshabilitado, entrega de emails configurada y
+  `${STAFF_INVITE_ORIGIN}/ops/accept` autorizado en redirect URLs.
+
+No se establece ninguna de estas variables remotamente en04B. Sin configuración,
+la invitación falla cerrada. Agregar el secreto de Supabase **no autoriza pagos**:
+Recurrente secret/mode/Sandbox/origen de pago y ordering continúan siendo gates
+separados. El acceptance anterior se conserva.
+
+La invitación nativa usa su fragmento de sesión (Auth JS instalado documenta que
+inviteUserByEmail no usa PKCE). `/ops/accept` elimina el fragmento de la barra antes
+de establecer la sesión y permite definir contraseña; después SQL decide acceso.
+No logs ni analytics de tokens. Login dirige kitchen/fulfillment/driver a su modo;
+founder al Command Center y admin a Fulfillment. Inactivos y cuentas sin perfil se
+rechazan. El proxy agrega `/ops` al mismo comportamiento de Auth sin inicializar
+checkout en entrada anónima; `requireAdmin()` y sus reglas no se modifican.
+
+### Flujos móviles y PII
+
+Kitchen: drop actual o selector, tandas/conteos, búsqueda por código, filtros por
+estado/tanda/slot, selección múltiple y acciones de asignación/preparación. Número,
+capacidad y hora objetivo de tanda los ingresa el operador. Conteos físicos usan
+request_id estable mientras un resultado sea incierto. Sin default20 unidades.
+
+Packing: código grande, primer nombre, cantidad, slot, método, checklist configurado,
+controles −/+ o COMPLETO. EMPACADO Y SELLADO permanece deshabilitado si falta un
+componente; checkbox de sello requerido y SQL lo verifica. Sigue MARCAR LISTO.
+El founder tiene configuración inicial del plan y corrección explícita auditada.
+Regresar a cola/prep invalida checklist/sello conforme a04A.
+
+Fulfillment: sincronización, packing/ready/pickup/delivery, driver por nombre,
+incidencias abiertas/resueltas y overrides founder/admin. Pickup usa la etiqueta
+configurada (base de negocio lobby Zona10) y ready → completed con sesión autorizada.
+Buscar por código no autentica a ningún cliente. No-show continúa respetando la
+configuración de gracia, sin cancelación/refund automático.
+
+Driver: solo deliveries activas actualmente asignadas, sin enum de otros drivers,
+tandas, pagos ni revenue. Muestra logística necesaria y pin original/overlay.
+ready → out_for_delivery → completed; al completar sale de la lista activa.
+Reasignación revoca el acceso del driver anterior en SQL, incluso tras esperar lock.
+
+Scanner interno04B: entrada de lector externo que escribe el token/URL o pegar QR;
+siempre existe búsqueda manual por código. Una URL debe pertenecer al mismo origen
+antes de extraer `/order/<token>`. El servidor hace SHA-256 y consulta `ops_lookup`
+con JWT founder/admin/fulfillment. Identificar NO completa: la acción separada exige
+RBAC, estado y versión. No se abre el tracker público, no se genera QR cliente, no se
+solicita cámara ni se transmite imagen. Decodificación por cámara queda diferida.
+
+WhatsApp: `src/lib/ops/messages.ts` centraliza pickup listo/en camino/localización;
+links manuales, sin ETA inventada, automatización, API, seguimiento ni analytics.
+Teléfono y mapas son acciones externas iniciadas por el operador, con noreferrer.
+
+| Actor | Proyección04B |
+|---|---|
+| Founder/Admin | Cola operacional completa; lista de perfiles. Gestión UI/endpoint de staff solo founder |
+| Kitchen | Código, ID de fulfillment necesario para acción, producto, cantidad, estado, slot, tanda, checklist, conteo de incidencias; nunca UUID comercial/contacto/pin/pago/revenue |
+| Fulfillment | Logística necesaria + drivers activos con nombre/ID/rol; sin Auth internals |
+| Driver | Logística de entregas activas asignadas, issues asignados; sin otros drivers/pedidos/payment/order_id |
+| Customer | DTO checkout propio; `available` por horario, sin ocupantes ni PII de terceros |
+
+Targets móviles48px, blanco/crema/negro/naranja, español, sin emojis ni nuevo estilo
+SaaS. Refresh manual, bloqueo de doble-submit, errores visibles; no optimistic writes
+ni polling operativo. Cambiar filtros no solicita datos adicionales.
+
+### Evidencia de validación04B
+
+Validación ejecutada con Node **22.22.1**, PostgreSQL local desechable, fixtures
+sintéticos. Sin recursos externos, mensajes reales ni cambios en Supabase/Netlify.
+
+- Sprint01 SQL: aprobado. Sprint02:78 aserciones y2 carreras. Sprint03:279 y9.
+- Sprint04A:388 aserciones y6 carreras; pruebas originales preservadas, fixtures
+  delivery reciben pin. El conteo incluye la matriz de grants para RPCs adicionales.
+- Sprint04B:158 aserciones y7 carreras. Incluye3 compradores simultáneos por2 cupos,
+  max_units, sync duplicado, bulk con cupo, packing stale y pago tardío vs nuevo pedido.
+  Las carreras observan `pg_stat_activity.wait_event_type = Lock` antes de liberar.
+- SQL02–04B total:903 aserciones,24 carreras reales. Constraints/RLS no deshabilitados.
+- Unitarias generales47/47; proveedor/firma/origen80/80; operaciones/tokens6/6.
+- Admin/Ops navegador23/23:14 regresiones Admin,3 Command Center y6 flujos04B; Chrome,
+  390px y1440px, WCAG A/AA, entrada cero cookies, perfiles inactivos y whitelist PII.
+- 80 unidades:40 pedidos multiunidad,3 slots, sincronización + asignación + prep masiva
+  en57–77ms en PostgreSQL local; navegador carga/filtra el fixture sin overflow.
+  Es una prueba local representativa, **no** el ensayo operacional04D ni SLA remoto.
+
+La primera ejecución de npm se resolvió a Node20 por Volta. Se corrigió invocando el
+binario22 explícitamente;47 unitarias y23 navegador pasaron con22. Se corrigieron
+nombres accesibles de selects y el indicador de configuración de invitaciones.
+La entrada anónima de Admin sigue sin construir Auth ni fabricar cookie checkout.
+
+- Migración final desde otra base PostgreSQL17.6 vacía:23 archivos001–022 aplicados;
+  regresiones SQL completas repetidas con los mismos resultados.
+- Checkout/pagos navegador:18 casos existentes aprobados; nuevo caso delivery/pin/slot
+  lleno aprobado,19 casos distintos en total. El caso nuevo valida la propiedad
+  nativa `HTMLOptionElement.disabled` (el matcher genérico de Playwright no la
+  reconocía aunque el atributo y árbol accesible ya mostraban disabled).
+- Storefront/packaging:42/42,320–1440px. Total de casos browser distintos:84.
+- Build final Next16.3.5 webpack, `NEXT_PUBLIC_SITE_MODE=production`, Node22.22.1:
+  aprobado. TypeScript y lint sin errores ni warnings de código.
+- Secret scan:49 archivos fuente/documentación modificados/nuevos y146 compilados
+  cliente/servidor;0 hallazgos por patrones de credenciales y valores privados locales
+  exactos, sin imprimirlos. No se usa esto como evidencia de un scan del hosting.
+- No se imprimió ni se agregó un secreto al commit; `.env.example` solo documenta
+  el nombre vacío `STAFF_INVITE_ORIGIN`. Los harnesses usan credenciales sintéticas.
+
+Para reproducir: usar **el ejecutable Node22** (Volta puede interceptar `npm`),
+`DEIPO_TEST_DATABASE_URL` con una base loopback vacía y exclusiva; ejecutar
+`node scripts/setup-orders-test-db.mjs`, scripts `test-orders-db`, `test-payments-db`,
+`test-operations-db`, `test-operations-04b-db`, luego `test-admin` y `test-checkout`.
+`test-checkout` acepta filtros Playwright como `--grep 'delivery checkout'`.
+El último fixture04B deja40 pedidos/80 unidades para browser; nunca usar acceptance.
+Las pruebas storefront requieren build local preview; después se reconstruye en
+production. Invocaciones unitarias conservan `--conditions=react-server` para pagos
+/operaciones. Los clusters locales se detienen al terminar; sus archivos se conservan.
+
+Warnings conocidos: fixtures de imágenes HTTP loopback disparan la protección SSRF
+de Next; se conserva sin habilitar dangerouslyAllowLocalIP. Los tests de refresh
+revocado y DB caída generan errores esperados. Ninguno acredita Auth/email/Storage
+remoto ni reemplaza la aceptación runtime después de un release autorizado.
+
+### Lo que falta para04C/04D y lanzamiento
+
+Detenerse en04B. Hace falta autorización nueva para cualquier push/PR/deploy,
+aplicación019+ o cambio de entorno. Antes de lanzar: configurar cupos reales por
+slot (null no protege un máximo de negocio), plan/fechas/cutoff/lead times, menú y
+precio reales, zonas/fees y usuarios con nombres válidos. Resolver expiración y
+retención de tracker/PII; validar invitación/email/contraseña y roles en Supabase real,
+Safari/iPhone real, y el runtime Netlify. El bridge local comprueba contratos y SQL,
+no entrega emails ni prueba el proveedor Auth remoto.
+
+04C: pin-picker cómodo, tracker público pulido/QR cliente, eventual cámara y
+experiencia final de etiquetas/impresión según alcance nuevo. 04D: ensayo completo,
+reporte de cierre y aceptación operacional. No se implementan automatización de
+WhatsApp, CRM/loyalty/ERP, analítica Meta/GA, rutas óptimas, Q/km, refunds, menú/precio
+inventados, fecha pública o LIVE. El siguiente sprint no empieza automáticamente.
+
+### Archivos del checkpoint04B
+
+- `.env.example`.
+- `AGENTS.md`.
+- `docs/deipo-os-sprint-04.md`.
+- `package.json`.
+- `playwright.admin.config.ts`.
+- `scripts/test-admin.mjs`.
+- `scripts/test-checkout.mjs`.
+- `scripts/test-operations-04b-db.mjs`.
+- `scripts/test-operations-db.mjs`.
+- `scripts/test-orders-db.mjs`.
+- `src/app/admin/(protected)/drops/[id]/page.tsx`.
+- `src/app/admin/(protected)/operations/page.tsx`.
+- `src/app/admin/(protected)/operations/staff/page.tsx`.
+- `src/app/api/ops/route.ts`.
+- `src/app/api/ops/staff/route.ts`.
+- `src/app/ops/(staff)/[mode]/page.tsx`.
+- `src/app/ops/accept/page.tsx`.
+- `src/app/ops/actions.ts`.
+- `src/app/ops/layout.tsx`.
+- `src/app/ops/login/page.tsx`.
+- `src/app/ops/ops.css`.
+- `src/app/ops/page.tsx`.
+- `src/components/checkout/live-checkout.tsx`.
+- `src/components/ops/accept-invite.tsx`.
+- `src/components/ops/console.tsx`.
+- `src/components/ops/login.tsx`.
+- `src/components/ops/packing-plan.tsx`.
+- `src/components/ops/staff.tsx`.
+- `src/components/ops/sync.tsx`.
+- `src/lib/deipo/checkout.ts`.
+- `src/lib/deipo/repositories/mutations.ts`.
+- `src/lib/ops/auth.ts`.
+- `src/lib/ops/contracts.ts`.
+- `src/lib/ops/http.ts`.
+- `src/lib/ops/messages.ts`.
+- `src/lib/ops/repository.ts`.
+- `src/lib/ops/staff.ts`.
+- `src/proxy.ts`.
+- `src/types/database.types.ts`.
+- `supabase/migrations/20261006010000_021_slot_capacity_delivery_pin.sql`.
+- `supabase/migrations/20261006011000_022_operations_workflows.sql`.
+- `tests/admin-browser/operations-04b.spec.ts`.
+- `tests/checkout-browser/checkout.spec.ts`.
+- `tests/fixtures/checkout-http.mjs`.
+- `tests/fixtures/operations-db.mjs`.
+- `tests/fixtures/operations-helpers.mjs`.
+- `tests/fixtures/supabase-http.mjs`.
+- `tests/operations/04b.test.ts`.
+- `tests/proxy.test.ts`.
+
+Commit local: el SHA exacto se registra en Wichiss y en la entrega, evitando una
+autorreferencia al hash. La rama queda ahead1 del checkpoint04A; no push/PR/deploy.

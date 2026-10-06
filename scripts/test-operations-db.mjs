@@ -180,6 +180,8 @@ async function makeOrder(
       phone: "+50255551234",
       email: "pii@example.test",
       method,
+      delivery_latitude:method === "delivery" ? 14.6 : undefined,
+      delivery_longitude:method === "delivery" ? -90.5 : undefined,
       slot_id: slot,
       zone_id: zone,
       address: method === "delivery" ? "ADDRESS_SENTINEL" : undefined,

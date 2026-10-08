@@ -673,6 +673,8 @@ try {
     eq(
       Object.keys(tracker).sort(),
       [
+        "drop_number",
+        "payment_state",
         "order_code",
         "product",
         "quantity",

@@ -13,6 +13,10 @@ export function providerCheckoutUrl(value: unknown) {
     throw new PaymentError('PAYMENT_CREATION_UNKNOWN', true);
   return value;
 }
+export function bankTransferMemo(code:string) {
+ if(!/^D-[A-F0-9]{12}$/.test(code))throw new PaymentError('PAYMENT_NOT_AVAILABLE');
+ return `DEIPO${code.replace('-','')}`;
+}
 export function checkoutBody(p: PaymentPreparation, origin: string) {
   if (!p.item || !p.order_code || p.attempt.currency !== 'GTQ')
     throw new PaymentError('PAYMENT_NOT_AVAILABLE');
@@ -50,11 +54,13 @@ export function checkoutBody(p: PaymentPreparation, origin: string) {
     items.push(line('Entrega', p.delivery_fee_minor, 1));
   return {
     items,
+    bank_transfer_memo: bankTransferMemo(p.order_code),
     success_url: `${origin}/success`,
     cancel_url: `${origin}/checkout?payment=cancelled`,
     expires_at: p.attempt.expires_at,
     metadata: {
       integration: 'deipo',
+      sales_channel: p.sales_channel ?? 'web',
       integration_version: 'sprint-03',
       deipo_order_code: p.order_code,
       deipo_payment_attempt_id: p.attempt.id,
@@ -142,11 +148,18 @@ export function recurrenteClient(
           !Number.isFinite(Date.parse(String(data.created_at))))
       )
         throw new PaymentError('PAYMENT_CREATION_UNKNOWN', true);
+      if (!Array.isArray(data.payment_method_types) ||
+          !data.payment_method_types.includes('card') || !data.payment_method_types.includes('bank_transfer') ||
+          data.payment_method_types.some((method) => !['card','bank_transfer'].includes(String(method))) ||
+          data.bank_transfer_memo !== body.bank_transfer_memo)
+        throw new PaymentError('PAYMENT_METHODS_UNAVAILABLE',true);
       const checkout_url = providerCheckoutUrl(data.checkout_url);
       if (!checkout_url.endsWith('/' + data.id))
         throw new PaymentError('PAYMENT_CREATION_UNKNOWN', true);
       return {
         status: 'checkout_ready',
+        payment_method_types: data.payment_method_types as string[],
+        bank_transfer_memo: body.bank_transfer_memo,
         id: data.id,
         checkout_url,
         provider_status: data.status,

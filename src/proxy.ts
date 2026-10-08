@@ -42,4 +42,4 @@ export async function proxy(request: NextRequest) {
   response.headers.set('Expires', '0');
   return response;
 }
-export const config = { matcher: ['/admin/:path*','/ops/:path*','/','/checkout'] };
+export const config = { matcher: ['/admin/:path*','/ops/:path*','/','/checkout','/buy/:path*'] };

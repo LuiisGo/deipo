@@ -9,6 +9,7 @@ export type PaymentPreparation = {
     currency: string;
     resolution_status: string;
   };
+  sales_channel?: string;
   order_code?: string;
   item?: { name: string; quantity: number; unit_price_minor: number };
   delivery_fee_minor?: number;
@@ -19,6 +20,8 @@ export type CheckoutResult = {
   provider_status: string;
   created_at: string | null;
   status: 'checkout_ready';
+  payment_method_types: string[];
+  bank_transfer_memo: string;
 };
 export type PaymentReceipt = {
   code: string;
@@ -51,6 +54,8 @@ export type PaymentState = {
     | 'expired'
     | 'review_required'
     | 'creation_unknown';
+  sales_channel?: string;
   order_code?: string;
+  reservation_until?: string | null;
   receipt?: PaymentReceipt;
 };

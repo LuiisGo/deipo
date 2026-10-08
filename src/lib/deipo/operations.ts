@@ -32,6 +32,8 @@ export const issueReasons = [
 ] as const;
 export type IssueReason = (typeof issueReasons)[number];
 export interface CustomerTracker {
+  drop_number: number;
+  payment_state: "paid";
   order_code: string;
   product: string;
   quantity: number;
@@ -40,7 +42,7 @@ export interface CustomerTracker {
   slot_start_at: string | null;
   slot_end_at: string | null;
 }
-export interface KitchenOrder extends CustomerTracker {
+export interface KitchenOrder extends Omit<CustomerTracker, "drop_number" | "payment_state"> {
   id: string;
   version: number;
   wave_id: string | null;

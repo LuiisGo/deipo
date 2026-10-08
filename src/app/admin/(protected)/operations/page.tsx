@@ -19,7 +19,7 @@ export default async function Operations() {
         </div>
         <RefreshOperations />
       </div>
-      <nav className="admin-actions"><Link href="/ops/kitchen">Cocina</Link><Link href="/ops/fulfillment">Packing y fulfillment</Link><Link href="/admin/operations/staff">Equipo</Link></nav>
+      <nav className="admin-actions"><Link href="/admin/operations/sales">Ventas asistidas</Link><Link href="/ops/kitchen">Cocina</Link><Link href="/ops/fulfillment">Packing y fulfillment</Link><Link href="/admin/operations/staff">Equipo</Link></nav>
       {drop&&<SyncPaid dropId={drop.id}/>}
       {!drop || !metrics ? (
         <section>

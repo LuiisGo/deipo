@@ -31,7 +31,7 @@ const p: PaymentPreparation = {
     currency: 'GTQ',
     resolution_status: 'unresolved',
   },
-  order_code: 'D-TEST',
+  order_code: 'D-8626F64A7F6F',
   item: { name: 'Test drop', quantity: 2, unit_price_minor: 17500 },
   delivery_fee_minor: 0,
 };
@@ -44,6 +44,8 @@ const success = {
   status: 'unpaid',
   checkout_url: 'https://app.recurrente.com/checkout-session/ch_test',
   live_mode: false,
+  payment_method_types: ['card','bank_transfer'],
+  bank_transfer_memo: 'DEIPOD8626F64A7F6F',
 };
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status });

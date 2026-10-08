@@ -283,6 +283,8 @@ export type Database = {
       }
       drops: {
         Row: {
+          bank_transfer_grace_seconds: number | null
+          tracker_access_seconds: number | null
           capacity: number
           created_at: string
           created_by: string | null
@@ -311,6 +313,8 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          bank_transfer_grace_seconds?: number | null
+          tracker_access_seconds?: number | null
           capacity: number
           created_at?: string
           created_by?: string | null
@@ -339,6 +343,8 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          bank_transfer_grace_seconds?: number | null
+          tracker_access_seconds?: number | null
           capacity?: number
           created_at?: string
           created_by?: string | null
@@ -370,6 +376,8 @@ export type Database = {
       }
       inventory_holds: {
         Row: {
+          payment_pending_until: string | null
+          payment_pending_attempt_id: string | null
           checkout_session_hash: string
           converted_at: string | null
           created_at: string
@@ -382,6 +390,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          payment_pending_until?: string | null
+          payment_pending_attempt_id?: string | null
           checkout_session_hash: string
           converted_at?: string | null
           created_at?: string
@@ -394,6 +404,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          payment_pending_until?: string | null
+          payment_pending_attempt_id?: string | null
           checkout_session_hash?: string
           converted_at?: string | null
           created_at?: string
@@ -534,6 +546,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          sales_channel: string
+          assisted_by_user_id: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           created_at: string
@@ -566,6 +580,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          sales_channel?: string
+          assisted_by_user_id?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           created_at?: string
@@ -598,6 +614,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          sales_channel?: string
+          assisted_by_user_id?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           created_at?: string
@@ -655,6 +673,8 @@ export type Database = {
       }
       payment_attempts: {
         Row: {
+          provider_payment_methods: Json | null
+          provider_bank_transfer_memo: string | null
           amount_minor: number
           attempt_number: number
           checkout_url: string | null
@@ -684,6 +704,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          provider_payment_methods?: Json | null
+          provider_bank_transfer_memo?: string | null
           amount_minor: number
           attempt_number: number
           checkout_url?: string | null
@@ -713,6 +735,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          provider_payment_methods?: Json | null
+          provider_bank_transfer_memo?: string | null
           amount_minor?: number
           attempt_number?: number
           checkout_url?: string | null
@@ -1030,6 +1054,13 @@ export type Database = {
       }
     }
     Functions: {
+      sales_create_draft: { Args:{p_drop:string;p_quantity:number;p_channel:string;p_details:Json;p_hash:string;p_expires:string};Returns:string }
+      sales_claim: { Args:{p_hash:string;p_session:string};Returns:Json }
+      sales_desk: { Args:{p_drop:string};Returns:Json }
+      sales_configure: { Args:{p_drop:string;p_grace:number|null;p_tracker:number|null;p_reason:string};Returns:undefined }
+      customer_claim_access: { Args:{p_session:string;p_hash:string;p_envelope:string};Returns:Json }
+      sales_rotate_access: { Args:{p_id:string;p_hash:string;p_envelope:string;p_expires:string};Returns:undefined }
+      sales_print: { Args:{p_id:string;p_format:string};Returns:Json }
       ops_save_operator: { Args: { p_user_id:string;p_role:string;p_active:boolean;p_name:string;p_reason:string }; Returns:undefined }
       ops_operators: { Args:Record<PropertyKey,never>;Returns:Json }
       ops_drops: { Args:Record<PropertyKey,never>;Returns:Json }

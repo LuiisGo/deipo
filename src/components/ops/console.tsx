@@ -556,7 +556,7 @@ export function OpsConsole({
                     {statusLabels[o.status]}
                     {o.open_issues > 0 ? ` · ${o.open_issues} INCIDENCIAS` : ""}
                   </p>
-                  <h2>{o.order_code}</h2>
+                  <h2>{o.order_code}</h2>{!kitchen && mode!=="driver" && <a href={`/ops/print/${o.id}`}>ETIQUETAS / IMPRIMIR</a>}
                   {!kitchen && l && (
                     <p className="ops-person">
                       {l.logistics.name.split(" ")[0]} · {o.quantity}

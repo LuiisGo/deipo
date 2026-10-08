@@ -17,7 +17,8 @@
     "test:payments:db": "node scripts/test-payments-db.mjs",
     "test:operations": "node --conditions=react-server --import tsx --test tests/operations/*.test.ts",
     "test:operations:db": "node scripts/test-operations-db.mjs",
-    "test:operations:04b:db": "node scripts/test-operations-04b-db.mjs"
+    "test:operations:04b:db": "node scripts/test-operations-04b-db.mjs",
+    "test:commerce:db": "node scripts/test-commerce-db.mjs"
   },
   "dependencies": {
     "@fontsource/anton": "^5.2.8",
@@ -26,6 +27,7 @@
     "@supabase/supabase-js": "^2.116.0",
     "framer-motion": "13.2.0",
     "next": "16.3.5",
+    "qrcode": "^1.5.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
@@ -36,10 +38,12 @@
     "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.3.5",
+    "jsqr": "^1.4.0",
     "pg": "^8.23.0",
     "sharp": "^0.35.4",
     "tailwindcss": "^4.1.0",

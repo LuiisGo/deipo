@@ -684,3 +684,399 @@ inventados, fecha pública o LIVE. El siguiente sprint no empieza automáticamen
 
 Commit local: el SHA exacto se registra en Wichiss y en la entrega, evitando una
 autorreferencia al hash. La rama queda ahead1 del checkpoint04A; no push/PR/deploy.
+
+
+---
+
+## 2026-10-07 — Sprint 04C: Customer Experience + Omnichannel Commerce
+
+Continuación local del checkpoint04B `9a17969a6c848c307224c90edf526d92e666cb37`,
+en la misma rama `feat/deipo-os-sprint-04-operations`. El nuevo brief supersede
+únicamente el límite de alcance04B; arriba se conserva su historia. Ningún archivo
+001–022 se modifica. Sin push, PR, deploy, migraciones/configuración remota, LIVE,
+activación de ordering ni inicio04D. Los fixtures y todos los RPCs de validación
+corren exclusivamente en PostgreSQL desechable loopback.
+
+### Un motor comercial, tres canales de lanzamiento
+
+`orders.sales_channel` es `NOT NULL DEFAULT 'web'`, con check de valores
+`web`, `whatsapp_manual`, `admin_assisted`, `whatsapp_api`. Históricos quedan web;
+no se infiere de contacto/referrer. `assisted_by_user_id` es FK nullable a Auth,
+indexada; se escribe al crear el pedido, no mediante un UPDATE posterior. Ambos
+quedan protegidos por el trigger existente de snapshots inmutables.
+
+`private.create_commercial_order` extrae el cuerpo021 con dos parámetros privados
+de atribución y usa el deadline efectivo. El entrypoint público histórico sigue
+siendo web-only; no acepta un canal enviado por el cliente. La nueva función no
+tiene grants directos a anon/authenticated/service_role. No se duplican tablas
+de pedidos, snapshots, inventario, pagos o reconciliación.
+
+La mesa `/admin/operations/sales` exige founder/admin en aplicación y SQL. Recoge
+contacto, cantidad, método, slot, zona, dirección/referencia y pin; enumera borradores
+y deriva estados desde order/hold/último attempt: DRAFT, RESERVED, AWAITING PAYMENT,
+TRANSFER PENDING, PAID, EXPIRED, REVIEW y CANCELED. CLAIMED es un timestamp factual,
+no un estado comercial competidor. El pedido real enlaza a su detalle Admin.
+
+Analytics interno por drop/canal: pedidos, unidades, valor bruto de los pedidos,
+importe pagado comprometido y conteos pagados por tarjeta/transferencia. El valor
+bruto está rotulado separado del revenue; pendientes/review no son ingresos pagados.
+No se calcula conversión ni se agregan Meta/GA/UTMs.
+
+### Borrador, claim y flujo WhatsApp
+
+`assisted_sale_drafts` contiene intención y cotización, **sin reserva**. Token de32
+bytes aleatorios/base64url, solo SHA-256 en DB, expiración absoluta explícita,
+creator autenticado y canal manual. RLS habilitado, sin acceso directo incluso
+service_role, índices de FK, no-delete y trigger de hechos inmutables. Solo se
+permite una transición atómica a claimed con session_hash/order_id.
+
+Founder genera `CUSTOMER_COMMERCE_ORIGIN/buy/<token>`, copia o abre una conversación
+manual WhatsApp. No UUID/contacto en URL. El token se entrega una vez al crear el
+borrador; perder esa respuesta requiere crear otro borrador, nunca reservar a ciegas.
+La expiración del borrador se elige explícitamente (máximo técnico7 días, sin default
+de negocio). El link es un acceso al checkout DEIPO, no un checkout de proveedor
+precreado que reserve stock.
+
+GET `/buy` no consume nada: crea una cookie checkout normal y ofrece REVISAR MI
+PEDIDO. Este paso explícito evita que los previews de WhatsApp consuman el enlace.
+POST same-site `/api/customer/claim` manda el token en cuerpo, hace hash en servidor
+y llama un RPC service-only. Bajo lock de borrador -> session -> drop se verifican:
+expiración, cliente del replay, CURRENT/publicación/gate/ventana, precio y fee
+cotizados, inventario, método/slot/cupo/zona/dirección/pin. Hold y pedido canónicos
+se crean juntos y la reclamación se consume en el mismo commit. Un fallo revierte
+todo. No cambia cantidad, slot o precio silenciosamente. Un checkout preexistente
+se rechaza; una reclamación repetida solo retorna el pedido de la misma sesión.
+
+La cookie sigue siendo256 bits, HttpOnly, Secure en HTTPS, host-only, SameSite=Lax.
+El token del enlace no se reutiliza como cookie. Otro cliente no puede volver a
+reclamar ni cancelar el pedido ya vinculado a la sesión ganadora. El resumen del
+pedido precede a Recurrente; ningún redirect o screenshot confirma el pago.
+
+Flujo manual: WhatsApp -> founder mesa de ventas -> link DEIPO -> revisión del
+cliente -> Recurrente -> webhook verificado -> inventario comprometido -> Ops ->
+tracker. `whatsapp_api` está reservado por el schema de pedidos pero rechazado
+por la creación manual de drafts. Sprint05 deberá incorporar un adaptador autenticado
+de servicio con creator/auditoría propios para esa misma intención/claim; no se
+habilita una identidad de staff implícita ni una segunda reserva.
+
+### Transferencia: referencia, métodos y deadline efectivo
+
+Recurrente recibe exactamente `card` y `bank_transfer` por línea, sin cuotas.
+`bank_transfer_memo = 'DEIPO' + order_code sin guion`, por ejemplo
+`DEIPOD8626F64A7F6F`:18 caracteres alfanuméricos, longitud constante, único por el
+código immutable/unique del pedido y sin PII. No se cambia la referencia al retry.
+Una colisión activa reportada por el proveedor falla de forma explícita; no se
+genera otra referencia ni se duplica el checkout automáticamente.
+
+El cliente exige que la respuesta confirme ambos métodos, ningún método adicional
+y el memo esperado antes de redirigir. Si faltan o difieren, queda creation_unknown
+para revisión segura; no anuncia un método inexistente. Se conservan en el attempt
+`provider_payment_methods` y `provider_bank_transfer_memo`, junto a status/IDs/fechas
+ya soportados. Históricos y fixtures legados admiten null en estos dos campos.
+Metadata agrega `sales_channel`; se conserva `integration_version=sprint-03` como
+versión del protocolo vigente, no como versión de la interfaz.
+
+Referencia oficial consultada: [Crear checkout de Recurrente](https://docs.recurrente.com/referencia-api/api-reference/checkouts/create-checkout).
+
+`drops.bank_transfer_grace_seconds` empieza null. El máximo604800 es un límite
+técnico de seguridad, no una duración de lanzamiento. Solo el primer pending
+verificado y correlacionado del intento, `type=bank_transfer`, mientras hold activo
+y aún vigente, puede escribir `inventory_holds.payment_pending_until` y su
+`payment_pending_attempt_id`. El deadline es el primer tiempo de recepción/proceso
+verificado + duración configurada. Replays o nuevas deliveries del mismo pending
+no lo extienden; configurar gracia después de observar pending tampoco lo renueva.
+
+Decisión conservadora: **pending tardío no resucita una reserva vencida**. Si el
+cliente dejó vencer el hold antes del primer webhook, solo succeeded puede recuperar
+capacidad por la comprobación autoritativa preexistente. Esto evita competir por
+stock ya ofrecido a otros clientes por una transferencia todavía impaga.
+
+Deadline único = `greatest(expires_at, payment_pending_until)`. Se actualizan
+`drop_inventory`, ocupación de slots, DTO checkout, expiración de sesión, cancelación,
+preparación de pago, estado de pago/recibo, proyección Admin y finalizador. Los
+recuentos usan tiempo actual después de locks; no requieren cron. El expires_at
+original nunca se reescribe. Solo un RPC controlado modifica la extensión; se
+retira UPDATE/INSERT/DELETE directo de service_role sobre holds.
+
+Failure/canceled correlacionado limpia únicamente la extensión del mismo attempt,
+dejando el plazo original si todavía existe. Succeeded compromete una vez. Expirado
+el plazo efectivo, el finalizador revalida inventario y slot; sin cupo registra el
+éxito financiero y review_required, sin fulfillment ni auto-refund. Tarjeta pending
+no obtiene gracia. Null conserva la política03 de reservas válidas.
+
+Reemplazo exacto del finalizador021: se conserva orden inbox -> session -> drop ->
+hold -> order -> attempt, monotonicidad, Sandbox exacto y dedupe; se agrega validación
+de amount/currency/correlación para eventos no terminales antes de efectos de reserva,
+atribución de canal cuando viene en metadata, extensión/limpieza acotadas y uso del
+deadline efectivo. No adquiere locks Ops ni aprovisiona fulfillment. Eventos de
+correlación incorrecta quedan diagnosticados; ningún dato del cliente autoriza pago.
+
+### Tracker, entrega del token y QR
+
+GET `/order/<token>` es una lectura server-only con whitelist. Código, drop/producto,
+cantidad, pickup/delivery, slot, pago confirmado y progreso. Queued -> CONFIRMED,
+in_prep -> PREPARING, packed -> PACKED, ready -> READY, out_for_delivery -> ON THE WAY,
+completed -> DELIVERED o PICKED UP. Pickup omite reparto. Cancelación operativa
+informa atención necesaria sin inventar refund. Sin horario se indica por confirmar.
+
+El tracker público solo existe después de paid + inventario comprometido/no liberado
++ attempt succeeded/committed. TRANSFERENCIA EN PROCESO se muestra en el recibo privado
+de la sesión, con deadline vigente cuando existe, refresh finito/manual y sin QR
+operacional previo al pago. Review required nunca recibe una promesa de fulfillment.
+
+POST `/api/customer/access` exige mismo origen y checkout cookie propia. Comparte
+`private.provision_committed_order` con `ops_provision`; toma únicamente advisory
+Ops -> pedido, comprueba pago/commit dentro del lock, crea snapshot de packing y
+evento exactamente una vez. No toma locks de inbox/session/drop/hold después, por
+lo que no invierte el protocolo de pagos. No llama RPCs de mutación Ops generales
+con identidad inventada. `actor_kind=customer_claim` permite actor NULL únicamente
+para provisioned/access_rotated; staff conserva actor obligatorio. Sync explícito
+04B continúa como fallback, y las lecturas de colas siguen puras.
+
+Token aleatorio256 bits; SHA-256 para lookup. Para recuperación durable se agrega
+un **envelope AES-256-GCM**, nonce aleatorio96 bits, tag128 bits, AAD/version fija,
+a `customer_order_access`. El servidor verifica hash tras descifrar. La clave32
+bytes vive en `CUSTOMER_ACCESS_ENCRYPTION_KEY`, nunca DB, cliente o repositorio.
+No se persiste token plaintext. El RPC devuelve el envelope solo a servidor capaz
+de autenticar la sesión; navegador recibe únicamente URL/QR. Replays devuelven el
+envelope existente, incluso bajo dos claims simultáneos; no rotan al recargar.
+
+`tracker_access_seconds` null bloquea provisión automática, sin duración inventada.
+Staff puede emitir/rotar con expiración absoluta o revocar desde impresión; los
+replays del cliente no reactivan acceso revocado/expirado. Cambiar/perder la clave
+requiere rotar los accesos afectados con nueva clave; links ya entregados siguen
+funcionando por hash hasta expiración/revocación. Reencriptado masivo/retención de
+PII no forma parte04C. Una rotación por el RPC04A antiguo invalida el envelope
+para evitar recuperación de un token viejo; usar la nueva UI para entrega durable.
+
+QR con [node-qrcode](https://github.com/soldair/node-qrcode) local, PNG/data URI,
+error correction M y margen4. Codifica únicamente el origen configurado + `/order/`
++ token; sin contacto, UUID, payment ID o servicios QR externos. Se muestra en
+tracker, recibo verificado y etiquetas cuando hay acceso. El test decodifica el
+PNG con jsQR y verifica igualdad byte a byte del URL. Identificación no autoriza
+entrega: scanner04B continúa requiriendo JWT, estado y versión.
+
+Headers: no-store privado y CDN, noindex/nofollow, no-referrer en buy/order/success,
+API y print. No analytics ni console de tokens; logging de request paths buy/order
+excluido en Next dev. **Pendiente antes de release:** verificar redacción/exclusión
+de logs de acceso/errores en infraestructura Netlify; este cambio local no puede
+certificar ni modificar el logging remoto bajo las restricciones del brief.
+
+### Pin, printing y storefront
+
+Geolocalización por botón USAR MI UBICACIÓN, preview, AJUSTAR PIN MANUALMENTE con
+pareja de coordenadas requerida y fallback visible al denegar permiso. Dirección
+sigue requerida y notas opcionales; pickup no pide ubicación. Adapter pequeño
+`browserLocation`, sin SDK/tiles/provider externo, credencial pública, geocoding
+automático, cuenta o costo contratado. **No hay mapa visual configurado**; el flujo
+entrega la alternativa explícitamente solicitada cuando no hay proveedor. El
+snapshot original021 y overrides auditados permanecen separados. Permissions-Policy
+permite geolocalización same-origin; solo checkout/ventas asistidas llaman la API
+tras pulsar el botón. El permiso del documento debe sobrevivir navegación SPA
+desde el storefront/login; una policy global deny con override solo por ruta no
+funciona al navegar sin recargar. Cámara/micrófono siguen bloqueados.
+
+`/ops/print/<fulfillment>` requiere founder/admin/fulfillment, nunca kitchen/driver
+o token público. Formatos packing/pickup/delivery/sheet, thermal genérico y A4 con
+CSS de páginas nombradas. No binding a impresora. Bag labels incluyen código, primer
+nombre, cantidad, fecha/slot/método y checklist donde corresponde. Solo delivery
+es un documento logístico interno con teléfono/dirección/referencia actuales,
+incluido overlay auditado. QR opcional cuando existe acceso vigente; raw envelope
+no se serializa al cliente. Páginas enlazadas desde cada ficha de Fulfillment.
+
+La superficie de compra conserva identidad: COMPRAR ONLINE + PEDIR POR WHATSAPP,
+negro/crema/naranja y texto Tarjeta · Transferencia bancaria. Número empresarial
+configurable `NEXT_PUBLIC_SALES_WHATSAPP_NUMBER` (solo dígitos internacionales).
+Sin número válido no se fabrica CTA. Copy y deep links centralizados, sin Cloud API,
+bot, webhook de WhatsApp, tracking o envío automático. Solo CURRENT alimenta el
+número de drop del mensaje; no se inventa DROP001.
+
+### Rutas, funciones y matriz de privacidad
+
+Rutas nuevas: `/admin/operations/sales`, `/api/ops/sales`, `/buy/[token]`,
+`/api/customer/claim`, `/api/customer/access`, `/order/[token]`, `/ops/print/[id]`.
+Checkout, success, storefront y la cola Ops reciben mejoras aditivas.
+
+RPCs nuevos authenticated (RBAC interno): `sales_create_draft`, `sales_desk`,
+`sales_configure`, `sales_rotate_access`, `sales_print`. Service-only: `sales_claim`,
+`customer_claim_access`. Cada RPC tiene wrapper invoker y private definer de
+search_path vacío, grants explícitos y PUBLIC execute revocado.
+
+Helpers privados nuevos sin ejecución cliente: `effective_hold_deadline`,
+`create_commercial_order`, `assisted_facts_immutable`, `provision_committed_order`.
+Reemplazados: `hold_facts_immutable`, `expire_checkout_session`, `slot_occupancy`,
+`checkout_payload`, `prepare_payment_checkout`, `customer_payment_state`,
+`process_payment_webhook`, `cancel_pending_order_impl`, `save_payment_checkout`,
+`create_pending_order_from_hold_entry`, `ops_provision`, `ops_rotate_access`,
+`ops_customer_tracker`. Views reemplazadas: `drop_inventory`, `admin_order_state`.
+
+| Superficie / actor | Datos y autoridad |
+|---|---|
+| Founder/Admin ventas | Intención con contacto/logística; crea links/configura política; ningún paid manual |
+| Cliente con checkout cookie | Solo su pedido/recibo; reclama draft y acceso tras commit; no staff auth |
+| Tracker público | Código/producto/cantidad/método/slot/progreso; ningún contacto, UUID, importe, issue o provider ID; read-only |
+| Packing/pickup/sheet | Founder/Admin/Fulfillment; primer nombre/cantidad/slot/checklist/QR; sin dirección/teléfono |
+| Delivery print | Founder/Admin/Fulfillment; logística necesaria con overlay; documento interno |
+| Kitchen / driver | Proyecciones04B intactas; sin acceso a mesa de ventas ni impresión privilegiada |
+| SQL / servidor | Claim hash; tracker hash + envelope cifrado; secretos solo servidor, ningún raw token en DB |
+
+### Validación y checkpoint04C
+
+Node **v22.22.1**, PostgreSQL **17.6** aislado en loopback. Base nueva desde cero:
+26 archivos de migración001–025, incluidos los dos005 históricos. Los23 archivos
+001–022 son byte-idénticos al checkpoint04B. Migraciones nuevas solo locales:
+
+| Migración | SHA-256 |
+|---|---|
+| `20261007010000_023_commerce_reservation.sql` | `c143e0ea85fd4f683c2a5fb7788701609418ebc49e7b051b7699f5a77b68b847` |
+| `20261007011000_024_assisted_commerce.sql` | `0145e15a5bbbe5b3d28941a9c58c12a01e221d505a1f783f05a7000d957073e7` |
+| `20261007012000_025_customer_access.sql` | `1a9fa087dcff2963724a85c4e34c2bf47c9474e8f8f583e3511fb361b2e0726f` |
+
+| Validación final | Resultado |
+|---|---|
+| Sprint01 schema/RLS/regresión | PASS sobre base recién creada |
+| SQL Sprint02 | 78 aserciones / 2 carreras |
+| SQL Sprint03 | 279 aserciones / 9 carreras |
+| SQL Sprint04A | 388 aserciones / 6 carreras |
+| SQL Sprint04B | 158 aserciones / 7 carreras |
+| SQL Sprint04C | 170 aserciones / 7 carreras |
+| Total SQL | **1073 aserciones / 31 carreras reales** |
+| Unitarias generales | 47 PASS |
+| Unitarias pagos + operaciones | 97 PASS; total **144** |
+| Browser checkout/pagos/comercio | 26 PASS; total browser **91** |
+| Browser Admin/Ops | 23 PASS |
+| Browser storefront | 42 PASS |
+| Fixture80 unidades | 40 pedidos / 3 slots; sync + asignación + prep **80ms** |
+| TypeScript / ESLint | PASS |
+| Build production webpack | PASS con Node22 |
+| Secret scan | Sin coincidencias; ver alcance abajo |
+| Histórico001–022 / whitespace diff | Byte-idéntico / PASS |
+
+Las carreras SQL esperan un bloqueo real observado en `pg_stat_activity`, con
+clientes independientes. Las siete nuevas cubren: claim competido entre clientes;
+claim duplicado misma sesión; pending transferencia contra comprador; pending
+ocupando último slot; claim tracker contra sync Ops; extensión vigente después
+del vencimiento original mientras espera otro comprador; comprador que gana stock
+vencido antes de un pending tardío. No hay oversell, sobrecupo ni resurrección de
+holds vencidos. Persisten carreras históricas de webhook, cancelación, slots,
+provisión, bulk y packing versionado.
+
+QR: decodificación jsQR tanto de PNG generado como del screenshot de la etiqueta
+bajo `media=print`, igualdad exacta del URL original. Browser incluye390px y1440px,
+accesibilidad automática del tracker, ventas asistidas pickup/delivery, revisión,
+recibo web, revoke/rotate, aislamiento, permisos de impresión, pin real del navegador
+y fallback al denegar. No reemplaza aceptación Safari/iPhone ni impresora física.
+
+Comandos reproducibles (Node22 en PATH; DB desechable **localhost** previamente
+seleccionada mediante `DEIPO_TEST_DATABASE_URL`; nunca apuntar a Production):
+
+```sh
+node scripts/setup-orders-test-db.mjs
+node scripts/test-orders-db.mjs
+node scripts/test-payments-db.mjs
+node scripts/test-operations-db.mjs
+node scripts/test-commerce-db.mjs
+node scripts/test-operations-04b-db.mjs
+npm test
+npm run test:payments
+npm run test:operations
+npm run test:checkout
+npm run test:admin
+NEXT_PUBLIC_SITE_MODE=preview npm run build
+npm run test:e2e
+NEXT_PUBLIC_SITE_MODE=production npm run build
+npm run typecheck
+npm run lint
+git diff --check
+```
+
+Warnings esperados: fixtures de imágenes loopback rechazados por protección SSRF
+de Next, imagen faltante intencional, fallo DB intencional y NO_COLOR/FORCE_COLOR.
+No se habilitó `dangerouslyAllowLocalIP` ni se debilitó seguridad para hacer pasar
+pruebas. Los fallos iniciales detectaron contraste del tracker, espera del aviso
+de revocación y Permissions-Policy durante navegación SPA; corregidos y revalidados.
+
+Secret scan: archivos nuevos/modificados más65 bundlesJS cliente del build final;
+comparación exacta con2 valores privados presentes en `.env.local`, sin imprimirlos,
+y patrones de clave privada/credencial LIVE. **Cero coincidencias.** No es garantía
+de auditoría universal. `.env.local` no se modificó ni se agregó al commit; nuevos
+valores comerciales quedan vacíos en `.env.example`. Dependencias auditadas aparte.
+
+Archivos cambiados en este checkpoint (50):
+
+- `.env.example`.
+- `AGENTS.md`.
+- `docs/deipo-os-sprint-04.md`.
+- `next.config.ts`.
+- `package-lock.json`.
+- `package.json`.
+- `scripts/test-checkout.mjs`.
+- `scripts/test-commerce-db.mjs`.
+- `scripts/test-operations-db.mjs`.
+- `src/app/admin/(protected)/operations/page.tsx`.
+- `src/app/admin/(protected)/operations/sales/page.tsx`.
+- `src/app/api/customer/access/route.ts`.
+- `src/app/api/customer/claim/route.ts`.
+- `src/app/api/ops/sales/route.ts`.
+- `src/app/buy/[token]/page.tsx`.
+- `src/app/globals.css`.
+- `src/app/ops/(staff)/print/[id]/page.tsx`.
+- `src/app/ops/(staff)/print/[id]/print.css`.
+- `src/app/order/[token]/page.tsx`.
+- `src/components/checkout/live-checkout.tsx`.
+- `src/components/checkout/reserve-button.tsx`.
+- `src/components/commerce/assisted-claim.tsx`.
+- `src/components/commerce/pin-picker.tsx`.
+- `src/components/commerce/print-controls.tsx`.
+- `src/components/commerce/sales-desk.tsx`.
+- `src/components/commerce/tracker-access.tsx`.
+- `src/components/drop/controls.tsx`.
+- `src/components/ops/console.tsx`.
+- `src/components/receipt/payment-status.tsx`.
+- `src/lib/commerce/access.ts`.
+- `src/lib/commerce/contracts.ts`.
+- `src/lib/commerce/location.ts`.
+- `src/lib/commerce/messages.ts`.
+- `src/lib/commerce/qr.ts`.
+- `src/lib/deipo/operations.ts`.
+- `src/lib/payments/errors.ts`.
+- `src/lib/payments/recurrente/client.ts`.
+- `src/lib/payments/recurrente/types.ts`.
+- `src/lib/payments/repository.ts`.
+- `src/proxy.ts`.
+- `src/types/database.types.ts`.
+- `supabase/migrations/20261007010000_023_commerce_reservation.sql`.
+- `supabase/migrations/20261007011000_024_assisted_commerce.sql`.
+- `supabase/migrations/20261007012000_025_customer_access.sql`.
+- `tests/checkout-browser/checkout.spec.ts`.
+- `tests/checkout-browser/commerce.spec.ts`.
+- `tests/checkout-browser/payments.spec.ts`.
+- `tests/fixtures/checkout-http.mjs`.
+- `tests/operations/commerce.test.ts`.
+- `tests/payments/provider.test.ts`.
+
+Commit local: SHA exacto en Wichiss y entrega, evitando autorreferencia. Rama
+`feat/deipo-os-sprint-04-operations`, padre `9a17969a6c848c307224c90edf526d92e666cb37`.
+Después del commit, árbol limpio y ahead1 del checkpoint remoto04B. Main remoto
+verificado read-only en `67099f7d847764941412900296cb938c88c989a0`. Sin push/PR/deploy,
+DDL/env remotos, activación de ordering/LIVE ni trabajo04D.
+
+### Configuración pendiente y bloqueo de lanzamiento
+
+Sin inventar fecha, menú, precio, cupos por slot, fees, lead times, gracia bancaria
+o vigencia tracker. Configurar por separado el origen HTTPS exacto de comercio,
+clave cifrado y su custodia, teléfono empresarial y políticas por drop. Persisten
+los gates independientes de ordering, Recurrente Sandbox y PAYMENT_ALLOWED_ORIGIN.
+No basta con configurar CUSTOMER_COMMERCE_ORIGIN para autorizar un pago.
+
+Resolver la auditoría de dependencias antes de release: npm reporta9 paquetes
+afectados (8 high,1 critical), todos existentes con **las mismas versiones que
+9a17969**: Next, sharp, source-map-js, @next/eslint-plugin-next, eslint-config-next,
+brace-expansion, braces, fast-glob y micromatch. Ninguno proviene de qrcode/jsQR.
+No se ejecutó audit fix ni una actualización mayor/ajena de framework en este
+checkpoint. Esta evidencia es distinta del secret scan.
+
+Además: aceptación real Auth/roles/email, Safari/iPhone, permisos de geolocalización,
+Recurrente métodos/memo en Sandbox real, impresora física/QR y runtime/logs Netlify
+solo tras autorización de release. Conservar infraestructura de aceptación y
+Production existentes. STOP04C; ningún ensayo04D ni WhatsApp Cloud API iniciado.

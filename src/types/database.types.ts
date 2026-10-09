@@ -285,6 +285,7 @@ export type Database = {
         Row: {
           bank_transfer_grace_seconds: number | null
           tracker_access_seconds: number | null
+          assisted_draft_retention_days: number | null
           capacity: number
           created_at: string
           created_by: string | null
@@ -315,6 +316,7 @@ export type Database = {
         Insert: {
           bank_transfer_grace_seconds?: number | null
           tracker_access_seconds?: number | null
+          assisted_draft_retention_days?: number | null
           capacity: number
           created_at?: string
           created_by?: string | null
@@ -345,6 +347,7 @@ export type Database = {
         Update: {
           bank_transfer_grace_seconds?: number | null
           tracker_access_seconds?: number | null
+          assisted_draft_retention_days?: number | null
           capacity?: number
           created_at?: string
           created_by?: string | null
@@ -1054,6 +1057,11 @@ export type Database = {
       }
     }
     Functions: {
+      ops_retention_configure: { Args:{p_drop:string;p_days:number|null};Returns:undefined }
+      ops_redact_expired: { Args:{p_drop:string};Returns:Json }
+      ops_drop_report: { Args:{p_drop:string};Returns:Json }
+      ops_close_report: { Args:{p_drop:string};Returns:Json }
+      ops_release_readiness: { Args:{p_drop:string};Returns:Json }
       sales_create_draft: { Args:{p_drop:string;p_quantity:number;p_channel:string;p_details:Json;p_hash:string;p_expires:string};Returns:string }
       sales_claim: { Args:{p_hash:string;p_session:string};Returns:Json }
       sales_desk: { Args:{p_drop:string};Returns:Json }

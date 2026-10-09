@@ -133,7 +133,7 @@ const p: PaymentPreparation = {
   },
 };
 test("payment link requests only launch methods and channel metadata with canonical memo", () => {
-  const b = checkoutBody(p, "https://bydeipo.com");
+  const b = checkoutBody(p, "https://bydeipo.com", "CARD_AND_BANK_TRANSFER");
   assert.equal(b.metadata.sales_channel, "whatsapp_manual");
   assert.equal(b.bank_transfer_memo, "DEIPOD8626F64A7F6F");
   assert.deepEqual(b.items[0].payment_method_types, ["card", "bank_transfer"]);
@@ -168,7 +168,8 @@ for (const [name, methods, memo] of [
     await assert.rejects(
       () =>
         recurrenteClient(fetcher, {
-          RECURRENTE_MODE: "sandbox",
+          NEXT_PUBLIC_PAYMENT_METHODS: "CARD_AND_BANK_TRANSFER",
+            RECURRENTE_MODE: "sandbox",
           RECURRENTE_SANDBOX_ID: "sbx_fixture",
           RECURRENTE_SECRET_KEY: "sk_test_fixture",
         }).create(p, "https://bydeipo.com"),

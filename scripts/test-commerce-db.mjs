@@ -309,6 +309,7 @@ try {
       const a = await prepare(c, o);
       eq(await process(c, await event(c, a)), "processed");
       const pending = await hold(c, o);
+      console.log('GRACE_EVIDENCE', JSON.stringify({scenario:terminal,original_expiry:pending.expires_at,extended_deadline:pending.payment_pending_until,observed_at:new Date().toISOString()}));
       eq(pending.payment_pending_until > pending.expires_at, true);
       eq(await process(c, await event(c, a)), "processed");
       eq(
@@ -340,6 +341,8 @@ try {
     const o = await timedOrder(c);
     const a = await prepare(c, o);
     await process(c, await event(c, a));
+    const graceEvidence=await hold(c,o);
+    console.log('GRACE_EVIDENCE',JSON.stringify({scenario:'timed_grace_started',original_expiry:graceEvidence.expires_at,extended_deadline:graceEvidence.payment_pending_until,observed_at:new Date().toISOString()}));
     await delay(2150);
     eq((await inventory(c, o.d)).held_units, 1);
     await root(c);
@@ -349,7 +352,9 @@ try {
       "2",
     );
     eq((await rpc(c, "get_checkout_state", [o.session])).state, "active");
+    console.log('GRACE_EVIDENCE',JSON.stringify({scenario:'original_expiry_passed_reservation_active',observed_at:new Date().toISOString(),held_units:(await inventory(c,o.d)).held_units}));
     await delay(3100);
+    console.log('GRACE_EVIDENCE',JSON.stringify({scenario:'grace_expired_before_late_success',observed_at:new Date().toISOString(),held_units:(await inventory(c,o.d)).held_units}));
     eq((await inventory(c, o.d)).held_units, 0);
     eq(
       (await c.query("select * from private.slot_occupancy($1)", [o.slot]))

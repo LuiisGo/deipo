@@ -7,6 +7,6 @@ let code=1;
 try {
  const build=spawnSync(process.execPath,['node_modules/next/dist/bin/next','build','--webpack'],{env,stdio:'inherit'});
  code=build.status ?? 1;
- if(code===0)code=spawnSync(process.execPath,['node_modules/@playwright/test/cli.js','test','--config','playwright.admin.config.ts'],{env,stdio:'inherit'}).status ?? 1;
+ if(code===0)code=spawnSync(process.execPath,['node_modules/@playwright/test/cli.js','test','--config','playwright.admin.config.ts',...process.argv.slice(2)],{env,stdio:'inherit'}).status ?? 1;
 } finally { for(const [path,content] of originals)writeFileSync(path,content); }
 process.exitCode=code;

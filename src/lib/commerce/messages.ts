@@ -1,6 +1,7 @@
+import { paymentCopy } from './payment-methods';
 export const paymentMethodCopy = {
   title: "PAGA COMO PREFIRÁS",
-  methods: "Tarjeta · Transferencia bancaria",
+  methods: paymentCopy(process.env.NEXT_PUBLIC_PAYMENT_METHODS),
 };
 export function salesWhatsApp(number: string | undefined, dropNumber?: number) {
   if (!number || !/^[1-9][0-9]{7,14}$/.test(number)) return null;

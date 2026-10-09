@@ -21,6 +21,7 @@ export default async function Operations() {
       </div>
       <nav className="admin-actions"><Link href="/admin/operations/sales">Ventas asistidas</Link><Link href="/ops/kitchen">Cocina</Link><Link href="/ops/fulfillment">Packing y fulfillment</Link><Link href="/admin/operations/staff">Equipo</Link></nav>
       {drop&&<SyncPaid dropId={drop.id}/>}
+      <Link href="/admin/operations/release">Readiness y cierre de operaciones</Link>
       {!drop || !metrics ? (
         <section>
           <h2>Sin drop actual</h2>

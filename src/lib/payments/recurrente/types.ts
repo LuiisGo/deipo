@@ -21,7 +21,7 @@ export type CheckoutResult = {
   created_at: string | null;
   status: 'checkout_ready';
   payment_method_types: string[];
-  bank_transfer_memo: string;
+  bank_transfer_memo: string | null;
 };
 export type PaymentReceipt = {
   code: string;

@@ -16,6 +16,7 @@ import { NextRequest } from 'next/server';
 import { POST as paymentCheckout } from '../../src/app/api/payments/recurrente/checkout/route';
 import type { PaymentPreparation } from '../../src/lib/payments/recurrente/types';
 const env = {
+  NEXT_PUBLIC_PAYMENT_METHODS: 'CARD_AND_BANK_TRANSFER',
   RECURRENTE_MODE: 'sandbox',
   RECURRENTE_SECRET_KEY: 'sk_test_isolated_fixture',
   RECURRENTE_SANDBOX_ID: 'sbx_isolated',
@@ -49,6 +50,20 @@ const success = {
 };
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status });
+test('unconfigured launch methods block creation before any provider call', async () => {
+  let calls=0;
+  await assert.rejects(()=>recurrenteClient(async()=>{calls++;return json({});},{...env,NEXT_PUBLIC_PAYMENT_METHODS:''}).create(p,'https://bydeipo.com'),/PAYMENTS_NOT_CONFIGURED/);
+  assert.equal(calls,0);
+});
+test('card-only launch requests and accepts only card without bank memo',async()=>{
+ const body=checkoutBody(p,'https://bydeipo.com','CARD_ONLY');
+ assert.deepEqual(body.items[0].payment_method_types,['card']);assert(!('bank_transfer_memo' in body));
+ const result=await recurrenteClient(mock(()=>json({...success,payment_method_types:['card'],bank_transfer_memo:null})),{...env,NEXT_PUBLIC_PAYMENT_METHODS:'CARD_ONLY'}).create(p,'https://bydeipo.com');
+ assert.deepEqual(result.payment_method_types,['card']);assert.equal(result.bank_transfer_memo,null);
+});
+test('card-only launch rejects an unexpected provider method without silently changing its promise',async()=>{
+ await assert.rejects(()=>recurrenteClient(mock(()=>json(success)),{...env,NEXT_PUBLIC_PAYMENT_METHODS:'CARD_ONLY'}).create(p,'https://bydeipo.com'),/PAYMENT_METHODS_UNAVAILABLE/);
+});
 function mock(result: () => Promise<Response> | Response) {
   return (async (url) =>
     String(url).endsWith('/test') ? json(identity) : result()) as typeof fetch;
@@ -60,7 +75,7 @@ test('Hosted checkout uses immutable snapshot, split quantities, fee and no inst
     item: { ...p.item!, quantity: 10 },
     delivery_fee_minor: 50,
   };
-  const b = checkoutBody(input, 'https://bydeipo.com');
+  const b = checkoutBody(input, 'https://bydeipo.com', 'CARD_AND_BANK_TRANSFER');
   assert.deepEqual(
     b.items.map((i) => i.quantity),
     [9, 1, 1],

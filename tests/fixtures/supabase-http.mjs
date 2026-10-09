@@ -1,7 +1,7 @@
 // Isolated browser-contract fixture. Never connects to a Supabase project.
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { operationsSnapshot,opsBridge,opsFixtureUser } from './operations-db.mjs';
+import { operationsSnapshot,opsBridge,opsFixtureUser,releaseFixture } from './operations-db.mjs';
 let opsMode='empty';
 const founder='00000000-0000-4000-8000-000000000001';
 const nonadmin='00000000-0000-4000-8000-000000000002';
@@ -19,6 +19,7 @@ const server=http.createServer(async(req,res)=>{
  const url=new URL(req.url,'http://localhost');let raw='';for await(const chunk of req)raw+=chunk;
  let body={};try{body=raw?JSON.parse(raw):{};}catch{/* Storage is binary. */}
  const id=identity(req);
+ if(url.pathname==='/release-fixture')return send(await releaseFixture());
  if(url.pathname==='/fail-public'){failPublic=true;return send({});}
  if(url.pathname==='/deactivate'){active=false;return send({});}
  if(url.pathname==='/reset'){reset();opsMode='empty';return send({});}

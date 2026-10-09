@@ -1080,3 +1080,140 @@ Además: aceptación real Auth/roles/email, Safari/iPhone, permisos de geolocali
 Recurrente métodos/memo en Sandbox real, impresora física/QR y runtime/logs Netlify
 solo tras autorización de release. Conservar infraestructura de aceptación y
 Production existentes. STOP04C; ningún ensayo04D ni WhatsApp Cloud API iniciado.
+
+## 2026-10-08 — Sprint 04D release candidate and launch rehearsal
+
+**Release decision: NO-GO for DROP 001.** Local hardening is implemented. Remote acceptance remains incomplete: Preview configuration, real staff Auth/invite delivery, a new end-to-end Sandbox payment roundtrip, physical iPhone/printing, final business policies and hosting token-log controls are not accepted. This section does not authorize merging, Production migrations, ordering, LIVE payments or Sprint05.
+
+### Scope and implementation
+
+Continued `feat/deipo-os-sprint-04-operations` from `d576f0dd3b54a5cb02a3addc5c9692ea4d27eeab`. Historical migrations 001–025 are byte-identical. No broad redesign, scheduler, WhatsApp API or new observability platform.
+
+- 026 adds configurable abandoned-draft redaction and clears expired/revoked tracker envelopes. Founder-only, audited, idempotent, deterministic and row-lock serialized. A previously discovered PL/pgSQL alias collision was fixed before remote application and all final SQL tests rerun.
+- 027 adds founder-only current operational reports, immutable first-close snapshots and readiness checks. Close serializes through the Ops lock; a repeated close returns the same snapshot and does not emit another event. Closing does not lock fulfillment, change payment state, refund, release stock or delete history. Corrections remain visible in the separately labeled current report.
+- `/admin/operations/release` exposes configuration gaps, retention controls, close and printable reports. Tables support keyboard scrolling at 390px. The API requires founder identity and exact same-origin POST. No raw errors or prior PII are returned.
+- Payment copy and provider requests use explicit `NEXT_PUBLIC_PAYMENT_METHODS`: `CARD_ONLY` or `CARD_AND_BANK_TRANSFER`. Unconfigured means no payment-method promise and checkout creation fails closed. Response methods must match the requested set; transfer requires the exact memo. There is no silent card-only fallback. `PAYMENT_ACCEPTANCE_CONFIRMED` records the founder's verified set; readiness rejects mismatches. Configure public/server mode together and rebuild the deploy.
+
+### Dependency advisory triage
+
+Preserved machine-readable audit before/after/runtime results and affected dependency trees in `docs/evidence/sprint-04d/`. Initial audit: **8 high + 1 critical** affected packages. Final full audit: **5 high + 0 critical**. Runtime audit (`--omit=dev`): **0**. These are affected-package counts, not unique advisory counts.
+
+Minimal patches: Next and eslint-config-next 16.3.5 → 16.3.8; sharp 0.35.4 → 0.35.5; source-map-js 1.2.1 → 1.2.2; brace-expansion 1.1.18 → 1.1.21 and 5.0.9 → 5.0.12. No force fix, framework major migration or automated downgrade. Node 22.22.1 used for builds and tests; npm initially ran under the machine's Node20 shim and emitted engine warnings, so that invocation is not Node22 build evidence.
+
+| Advisory | Dependency / applicability and preconditions | Disposition |
+| --- | --- | --- |
+| [GHSA-vcvr-r3jv-pc5j](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j) | next direct runtime; ImageResponse with attacker-controlled SVG/style. DEIPO's OG content is static trusted artwork, not customer SVG. | REMEDIATE NOW, patched 16.3.8. Critical removed. |
+| [GHSA-3w37-wq28-93x7](https://github.com/advisories/GHSA-3w37-wq28-93x7) | next runtime; concurrent Draft Mode/use-cache fill. No such application path found. | REMEDIATE NOW, 16.3.8. |
+| [GHSA-4jqv-mc3x-m676](https://github.com/advisories/GHSA-4jqv-mc3x-m676) | next runtime; self-hosted SSG/ISR cache poisoning. Adapter-specific reachability not proven. | REMEDIATE NOW, 16.3.8. |
+| [GHSA-39w2-rjm5-chcv](https://github.com/advisories/GHSA-39w2-rjm5-chcv) | next development MCP endpoint; not served by a Production build. | DEV-ONLY / NOT RUNTIME RELEVANT; patched 16.3.8 anyway. |
+| [GHSA-f87g-xv8r-7p7x](https://github.com/advisories/GHSA-f87g-xv8r-7p7x) | next runtime metadata dynamicParams bypass; DEIPO metadata image is static. | REMEDIATE NOW, 16.3.8. |
+| [GHSA-mcj8-r9mp-w47p](https://github.com/advisories/GHSA-mcj8-r9mp-w47p) | next runtime SSG/ISR cross-user cache substitution; infrastructure preconditions not fully established. | REMEDIATE NOW, 16.3.8. |
+| [GHSA-cjq9-62q9-8jv4](https://github.com/advisories/GHSA-cjq9-62q9-8jv4) | next runtime image optimizer SSRF; configured storage origin only. Local QA image rejection confirms private-IP protection remains enabled. | REMEDIATE NOW, 16.3.8; do not enable dangerouslyAllowLocalIP. |
+| [GHSA-wq5f-xc86-pv6w](https://github.com/advisories/GHSA-wq5f-xc86-pv6w) | sharp direct dev tool plus Next optional dependency; crafted SVG/librsvg input. Supplied image pipeline is controlled. | REMEDIATE NOW, 0.35.5. |
+| [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q) | source-map-js transitive CSS/build tooling; hostile indexed source maps. | REMEDIATE NOW, 1.2.2. |
+| [GHSA-q2hr-2g5m-vwhr](https://github.com/advisories/GHSA-q2hr-2g5m-vwhr) | brace-expansion transitive tooling; crafted brace pattern quadratic CPU use. | REMEDIATE NOW, 1.1.21 / 5.0.12. |
+| [GHSA-qhr7-859c-m2p7](https://github.com/advisories/GHSA-qhr7-859c-m2p7) | brace-expansion transitive tooling; deeply nested group recursion. | REMEDIATE NOW, same patches. |
+| [GHSA-6j4f-fj2g-mc7p](https://github.com/advisories/GHSA-6j4f-fj2g-mc7p) | brace-expansion transitive tooling; parseCommaParts stack exhaustion. | REMEDIATE NOW, same patches. |
+| [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | braces 3.0.3 via micromatch 4.0.8 → fast-glob 3.3.1 → @next/eslint-plugin-next 16.3.8 → eslint-config-next 16.3.8. Crafted deeply nested glob reaches lint tooling; no request handler accepts globs. Five inherited package findings, one underlying advisory. | DEV-ONLY / NOT RUNTIME RELEVANT, ACCEPT TEMPORARILY for tooling. No patched braces release available at audit time; suggested Next14 downgrade is incompatible. |
+
+Temporary tooling owner: DEIPO maintainer / founder. Controls: keep lint/build input reviewed, do not run hostile glob patterns, run CI with bounded time, retain lockfile. Upgrade target: first braces patch that fixes the advisory and a compatible Next16 lint dependency chain; re-audit before release and track in Sprint05+ maintenance without starting that sprint. No known critical runtime finding remains in the recorded audit. Static reachability assessments above are code-review inferences, not exploit proofs.
+
+### Retention policy and limits
+
+| Record | Implemented policy | Launch decision still required |
+| --- | --- | --- |
+| Unclaimed assisted draft | Redact `details` only when expired, unclaimed, not connected to an order and past `expires_at + assisted_draft_retention_days`. Keep minimal identity/channel/price/expiry/audit fact and one redaction timestamp. Audit never copies the removed values. No revival or mutation of other immutable fields. | Founder must select final days. Null blocks cleanup; acceptance uses explicit 0 days only. |
+| Real order/payment/inventory | Preserve immutable commercial and financial snapshots. No paid-record deletion or automatic order redaction. | Founder must establish accounting/support retention with appropriate jurisdictional advice; this sprint invents no legal duration. |
+| Tracker access | Existing explicit `tracker_access_seconds`; hash lookup, server AES-GCM envelope, expiry/revoke checks. Expired access returns no order even if envelope remains. Revoke now removes envelope immediately; controlled cleanup removes expired envelopes. Rotation invalidates the old token. | Final duration, post-drop cleanup schedule, key custody and founder responsibility. Acceptance 3600 seconds only. |
+| Operational overrides | Preserve append-only actor/time/reason and original order snapshot. No new automatic deletion because audit/support requirements are unresolved. | Separate logistics/contact retention decision remains a launch condition; no claim of completed lifecycle cleanup. |
+
+Cleanup is a deliberate founder action, not a cron. Run after the configured horizon and after closing each drop; the report records the cleanup counts. The operation can redact sensitive data irreversibly, so use the explicitly configured policy and review eligible scope. Concurrent duplicate cleanup yields one audit fact; concurrent close yields one immutable snapshot. No RLS or triggers were disabled for tests.
+
+### Acceptance environment and migrations
+
+Preserved `deipo-os-acceptance` (`zyixizuutoyccouuijjz`) was restored from inactive state. Waited for ACTIVE_HEALTHY and original 001–018 history before writes; transient empty responses during startup were not treated as an empty database. No new Supabase project created.
+
+Acceptance has **28 migration records, 001–027 including the two historical 005 files**. Remote 019–027 SQL MD5 matches local contents. All local SHA256/MD5 values are in `migration-hashes.json`.
+
+| Migration | Remote version | SQL MD5 |
+| --- | --- | --- |
+| 019 | 20261008142307 | a9c0778c48259c2d4aa5d347bd84d0fd |
+| 020 | 20261008142326 | c8b49c0b96c932442390cf6908182826 |
+| 021 | 20261008142329 | 322bf686722709ff67bbb6a3ece5f861 |
+| 022 | 20261008142332 | cbc6d4fc7a8528c9d4b64ef52d65278c |
+| 023 | 20261008142340 | 43ae5da1912edb1bb4812fb0cab502ca |
+| 024 | 20261008142344 | 39a4dbf546deb8e4bb4822f1d85754b7 |
+| 025 | 20261008142347 | 4204111da5fe50fa5b671daa28acc639 |
+| 026 | 20261008202213 | 2855ba81c57a9a5ca6ea1f845aae630b |
+| 027 | 20261008202217 | 783fe5d9483c85b43aa2e01b3e6c5b87 |
+
+New 04D migration SHA256:
+
+- 026: `c6970eda5ce21e3403596d16f121ed10bc2d10d4e278e1de7a35fd22d5334c27`
+- 027: `0787aef77fa6dfe23b3ef0d154db5c630e0144ea19b81eda28e410a98e2d09d3`
+
+Remote synthetic DROP 9004 `ecae5fac-5735-4c83-80a6-2881b42c9776`, named **ACCEPTANCE / NOT CUSTOMER DATA / 04D**, has 80 units, synthetic Q5 price, optional max9, pickup/delivery, slots18–19/19–20/20–21 with explicit order capacities14/13/13 and unit capacities28/26/26, zones10/14/15 free plus16 Q1, three packing components, grace60s, tracker3600s, draft-retention0d. This is a draft with ordering OFF. Existing DROP9001 and CURRENT assignment are preserved. Auth-backed operations config/waves/staff are pending. Values are test configuration, not migration defaults or Production proposals.
+
+### Provider evidence versus fixtures
+
+`provider-methods.json` records two actual Sandbox HTTP201 creations at 20:33:58 UTC on 2026-10-08. The production client first verified `/test` environment=sandbox and exact existing Sandbox ID. Both returned live_mode=false; checkout responses omitted sandbox_id, so identity comes from the mandatory preflight, not an invented response field.
+
+- **PROVIDER-CONFIRMED:** CARD_ONLY returns exactly card, no memo required; CARD_AND_BANK_TRANSFER returns card+bank_transfer and exact requested bank_transfer_memo. The initial Q1 request was rejected with documented provider message minimum Q5, then corrected only in synthetic fixtures. No payment was submitted by these creation probes; no database order was fabricated for them.
+- **Historical evidence only:** Sprint03 card acceptance remains recorded in the previous closeout. It is not new 04D Preview roundtrip evidence.
+- **FIXTURE-CONFIRMED:** local signed Svix browser tests and parser tests cover pending/succeeded/failed/canceled, replay, expiry, environment mismatch and review. The 80-unit SQL rehearsal invokes normalized webhook consumer RPCs directly; those particular events are not signed network/provider deliveries.
+- **NOT VALIDATED in new Preview:** card success/decline return, real provider pending/failed/canceled delivery to the new Preview and staff/customer full remote journeys. Existing Sandbox webhook is preserved, not reconfigured or deleted.
+- Real bank transfer settlement is not possible in Sandbox. [Recurrente's Sandbox guide](https://docs.recurrente.com/guides-english/guides/sandboxes-and-test-clocks) states that simulations do not contact banks or processors. Its webhook helper tests delivery contracts without constructing the underlying domain flow. Offering bank transfer is confirmed; settlement is not.
+
+Grace evidence (`grace-timestamps.json`, UTC): original expiry20:30:22.410, extended deadline20:30:25.414. At20:30:22.569 the original deadline had passed and one unit remained held; at20:30:25.674 grace had expired and held units were0 before late success. Separate tests assert retained slot, no replay renewal, no card grace, failure/cancel clearing, late success capacity commit, no-capacity review and genuine races. These accelerated seconds and the remote60s setting are acceptance-only values. Financial data and slot counts are asserted, not inferred from UI timers.
+
+### Staff Auth, customer journeys and rehearsal
+
+Acceptance currently has zero Auth users. The available Supabase connector can migrate/query but does not provide acceptance service credentials. Local SUPABASE_SECRET_KEY is associated with a different project and was not reused. Netlify CLI is unauthenticated and the site configuration page still requires login. No site/Production environment variable was changed. Real founder invite delivery, `/ops/accept`, password setup/session and staff role redirects are **PENDING**; no direct inserts into remote auth.users were used to imitate real Auth. Controlled recipient email addresses are also pending from the founder.
+
+Required Preview-only setup after login: acceptance Supabase URL/publishable/service credentials, exact STAFF_INVITE_ORIGIN, CUSTOMER_COMMERCE_ORIGIN and PAYMENT_ALLOWED_ORIGIN for the new Preview, fresh server-only CUSTOMER_ACCESS_ENCRYPTION_KEY, explicit methods and matching acceptance acknowledgement, suitable test WhatsApp number, existing Sandbox key/ID/webhook secret. Verify callback allowlist for `/ops/accept`. Never set these payment credentials in Production or allow wildcard origins.
+
+Local customer browser tests cover storefront purchase, pickup/delivery pin, assisted WhatsApp/admin draft review+claim, fake-provider redirect/receipt, tracker/QR, expiry/revocation, geolocation success/denial, no fake paid confirmation, stock/slot errors and manual fallback. WhatsApp remains a manually opened deep link with DEIPO styling. Signed fixtures are labeled as such. These tests do not establish remote Auth or real email delivery.
+
+The preserved local rehearsal (`local-rehearsal.json`) covers **40 orders / 80 units**, three channels, card+transfer fixtures, pickup+delivery, 1/multi-unit quantities, 3 slots, 3 waves, one address override, sealed frozen packing checklists, assignment/reassignment, delivery lifecycle, one delivery issue resolved, waste1/damaged1/replacement1. **39 completed + 1 explicitly open pickup no-show = 40 accounted; zero oversell, slot overbooking or lost paid orders.** Expired claim, slot-full, payment-review, QR decoding and code fallback are covered by adjacent SQL/browser suites, not misrepresented as completed remote operator actions within this single script. On-time ≥95% is **NOT VALIDATED**: execution is accelerated and dates synthetic.
+
+Founder report includes drop, order/unit counts, sold percentage, gross order value, verified successful payment amount (including review), committed paid amount, method/channel splits, pickup/delivery, completed, both cancellation domains, review, lost operational rows, issues, production adjustments, slot distribution and timestamp-derived durations/late counts. Monetary values are explicitly labeled centavos. First close remains stable after repetition; live corrections appear separately. Print CSS is A4-friendly, and browser print rendering does not prove physical readability.
+
+### Mobile, physical printing and launch checklist
+
+WebKit equivalent is exercised at390px, including customer geolocation/assisted review/tracker/QR and Ops roles. Physical iPhone Safari remains **PENDING HUMAN VALIDATION**. For the final configured Preview, founder must record device/OS/date and result:
+
+- [ ] Safari390px: storefront → online checkout → pickup/delivery → deny location and enter pin manually → Hosted Checkout → return → receipt/tracker.
+- [ ] WhatsApp deep link → founder assisted draft → customer `/buy` review/claim → payment → tracker; repeat with expired link.
+- [ ] Real invite email for Kitchen/Fulfillment/Driver → `/ops/accept` → password/session → role redirect; deactivate staff and verify denial.
+- [ ] Kitchen has no contact/payment PII; Fulfillment checklist/seal and code fallback; Driver sees only assigned deliveries after reassignment.
+- [ ] Print packing, pickup and delivery labels on the actual A4/thermal device; inspect clipping, contrast, code and logistics access boundaries.
+- [ ] Scan QR from phone screen and printed paper; compare order; complete manual code fallback. Physical printing/scanning is **PENDING**.
+- [ ] Complete plausible timed 80-unit operations with operators and record ≥95% on-time only if measured; resolve or document every paid order.
+
+### Hosting privacy and error UX
+
+Application review retains private/no-store and no-referrer on buy/order/receipt, no analytics on capability routes, server-only keys and no application token/path console logging. Next's incoming-request ignore rule is not a platform log-redaction guarantee.
+
+[Netlify log-drain documentation](https://docs.netlify.com/manage/monitoring/log-drains/) exposes request paths; its optional PII exclusion removes client_ip/user_agent, not a documented capability-path redaction. No path-level redaction/disable setting was verified in this account. **Platform token logging remains unproven and is not accepted as a public-launch risk in this checkpoint.** High entropy prevents guessing but does not protect a token read from a log. Tracker is PII-free/read-only; unclaimed buy tokens can expose intended contact/logistics, so expiry alone is insufficient without verified log access/retention controls.
+
+Before GO: prove platform controls and document founder risk acceptance for bounded token lifetime/log-reader access, or use a focused mitigation: deliver capability in URL fragment, exchange through same-origin POST for a scoped HttpOnly session, then clear fragment and use fixed request paths. This is a proposed security change, not an implemented claim; verify POST logging/body redaction too. No platform logging controls or drains were changed.
+
+Existing customer/ops errors remain actionable for full slot, insufficient inventory, payment review/pending, expired claim, invalid/revoked tracker, inactive operator, driver assignment and stale version. SQL/browser tests cover these outcomes. No new stack traces, service keys or internal database IDs are intentionally displayed to customers. Admin retains manual payment review visibility.
+
+### Validation and release gates
+
+Final SQL run from an empty PostgreSQL17.6 database applies all28 migration files without disabling RLS/triggers. Sprint01 passed; Sprint02 78 assertions/2 races; Sprint03 279/9;04A403/6;04B158/7;04C170/7;04D71/2: **1,159 assertions and33 races**, plus Sprint01 regression and separate80-unit rehearsal. Grace timestamp logging was corrected and the complete04C suite passed again.
+
+Required founder gates remain explicit: CURRENT, published, capacity, price, menu/components, opening/closing/fulfillment date, cancellation cutoff, pickup/delivery, intended3slots/capacities, zones/fees, packing, optional max quantity and lead-time decision, transfer grace when enabled, tracker/draft retention, actual ready staff, WhatsApp, runtime keys/origins and method acceptance. Syntactically present values cannot prove real menu/pricing or trained staff; the panel always requires final founder acceptance and never enables ordering.
+
+Production baseline: project `qntjxfmwblhetpsmzzhm` has001–018 only (19 records), orders0, CURRENT/NEXT null, ordering-enabled drops0, hold TTL600. Drop-row aggregate MD5 `056d3ea1d4fc18e228759510e1f67d9d`. Netlify published deploy `6abddcecea4c8a000840c3cb`, main `67099f7d847764941412900296cb938c88c989a0`. No Production mutations, merge, LIVE endpoint or cleanup authorized/performed. Final remote checkpoint and postflight evidence are recorded below after release.
+
+Local browser/build evidence: Chrome checkout26 and storefront42 passed; WebKit checkout26 and Admin/Ops24 passed, including390px, geolocation permission/denial, assisted review, fixture payment return, tracker, QR, Kitchen/Fulfillment/Driver and release-report accessibility. General unit47 + payment/operations102 =149 passed. Typegen, TypeScript, ESLint and production build on Node22.22.1 passed. Final secret review compared changed files and751 client/server build artifacts (134 clientJS bundles) against the two actual local private credential values, plus private-key/live-key patterns: no findings. Credentials unavailable locally (webhook/encryption key) cannot be exact-value compared; reviewed server-only boundaries and synthetic test values instead. No actual staff/customer/assisted plaintext token was added to source/evidence. No `.env.local` changes or secret-bearing logs committed.
+
+Known validation warnings: Node NO_COLOR/FORCE_COLOR warning; intentionally revoked Auth refresh fixtures produce generic test-runtime errors; Next image optimization rejects loopback mock-storage images. SSRF protection remains intact. Initial browser failures caused by reused mutated Ops fixtures were resolved by generating a fresh04B fixture for each browser run. This is local fixture isolation, not a production data reset.
+
+Reproduce using Node22 and a disposable loopback PostgreSQL17.6 URL in `DEIPO_TEST_DATABASE_URL`: run `scripts/setup-orders-test-db.mjs` only against an empty DB; then test-orders-db, test-payments-db, test-operations-db, test-commerce-db, test-release-db, rehearse-release and test-operations-04b-db. Browser tests need those fixtures. Reset with test-operations-04b-db before each Admin browser execution; run scripts/test-admin.mjs. Use `DEIPO_BROWSER=webkit` and installed Playwright WebKit for equivalent acceptance. Customer tests use scripts/test-checkout.mjs; storefront expects a preview-mode build, then finish with a production-mode build. Never point any fixture helper at remote Supabase. Evidence deliberately excludes Playwright traces containing synthetic capability URLs.
+
+Production postflight confirms the same001–018 migration history, zero orders, zero ordering-enabled drops, null CURRENT/NEXT and TTL600. Repeating the original fingerprint expression `md5(string_agg(to_jsonb(d)::text,'' order by id))` gives the exact baseline `056d3ea1d4fc18e228759510e1f67d9d`. The published Production deploy still points to main67099f7. A JSON-array hash is a different serialization and must not be compared to this string-aggregation baseline.
+
+Final Chrome Admin/Ops rerun:24/24 passed including the new release report. Total final browser coverage: Chrome92 (26 checkout +24 Admin/Ops +42 storefront), WebKit50 (26 checkout +24 Admin/Ops). Physical device and actual remote customer acceptance remain separate pending gates.

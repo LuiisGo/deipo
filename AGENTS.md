@@ -2,7 +2,7 @@
 
 Consult the connected Wichiss Second Brain before substantial changes. The DEIPO MOC, current status, decisions and locked Brand System are canonical. Do not copy private vault contents into this public repository.
 
-- Current scope: DEIPO OS Sprint 04C Customer Experience + Omnichannel Commerce, continuing 9a17969 on feat/deipo-os-sprint-04-operations. Preserve 001–022; forward migrations start at 023. See the appended 04C section in docs/deipo-os-sprint-04.md. Local commit only: no push, PR, deploy, remote migrations/configuration, Production ordering or Recurrente LIVE. Stop at 04C; 04D and WhatsApp Cloud API are not authorized.
+- Current scope: DEIPO OS Sprint 04D Release Candidate + Launch Rehearsal, explicitly authorized by the user's 2026-10-08 brief, continuing d576f0dd3b54a5cb02a3addc5c9692ea4d27eeab on feat/deipo-os-sprint-04-operations. This supersedes the former 04C-only release restrictions. Preserve historical migrations 001–025 exactly; new forward migrations begin at 026. Allowed: security/acceptance fixes, retention, closeout/readiness reports, local full regression, normal push after local hardening, DRAFT PR against main, Netlify Deploy Preview, and migrations/configuration ONLY in preserved deipo-os-acceptance (zyixizuutoyccouuijjz). Production (qntjxfmwblhetpsmzzhm) is read-only: no migrations, business-data/env changes, ordering or LIVE. Do not merge, delete acceptance infrastructure, begin Sprint05 or implement WhatsApp Cloud API. See docs/deipo-os-sprint-04.md for historical scope and 04D evidence.
 - Consumer wordmark is `deipo.` with an orange full stop. Never use the historical working name for new assets.
 - Brand palette: cream `#F5F1E8`, matte black `#121212`, orange `#D3401F`, functional white.
 - No emojis in the interface, content or documentation. Use simple SVG icons for directional UI.
@@ -24,7 +24,7 @@ Consult the connected Wichiss Second Brain before substantial changes. The DEIPO
 - Staff invitations require server-only SUPABASE_SECRET_KEY and fixed STAFF_INVITE_ORIGIN; never derive permissions from Auth metadata or expose service credentials. Scanner identifiers never authorize fulfillment; JWT + SQL role/state/version do.
 - Run lint, typecheck, unit tests and a production build after meaningful code changes. Browser checks should cover relevant journeys and responsive layouts.
 - Write back durable implementation decisions and unresolved items to the existing DEIPO notes, preserving historical context.
-- Remote publication needs explicit authorization in the current session. Historical push authorizations do not authorize pushing Sprint 04C.
+- The current user brief explicitly authorizes the 04D release checkpoint: commit, normal branch push, DRAFT PR and Preview only after local hardening. It explicitly authorizes 019–025 and necessary 04D forward migrations ONLY in deipo-os-acceptance after identity/state/hash verification. Never merge or mutate Production.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

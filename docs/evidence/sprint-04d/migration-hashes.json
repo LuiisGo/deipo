@@ -1,0 +1,142 @@
+[
+  {
+    "file": "20260917014830_001_core_deipo_os.sql",
+    "sha256": "44dba0fc2d16ac8ebaf7319cd369ae277ab9cece61e39e0d044eb69123267ee1",
+    "md5": "fa43a57c76ccbc21c5d54d8a86dfd1ce"
+  },
+  {
+    "file": "20260917014923_002_harden_function_privileges.sql",
+    "sha256": "5911f5c4971b016fdc9aa6cdf9cfb8cab9e829c123bbc121d2eebca2fffcb3c4",
+    "md5": "5677380c8294d1babf7e269ad76eee36"
+  },
+  {
+    "file": "20260917015013_003_api_security_and_rls_hardening.sql",
+    "sha256": "144747408d3875ed34743c28dc38cd22a181ffe011b19dd74f2765fc8a8433da",
+    "md5": "c5aa67b95a78ff6b047db61d52ed4a2f"
+  },
+  {
+    "file": "20260917015051_004_targeted_fk_indexes.sql",
+    "sha256": "f2a6558ccfc81d29ae14913c735e050a9878b3da5346abc58ef0c3c57c51b320",
+    "md5": "200f160bfbbedc3eccb36f75951cd7f8"
+  },
+  {
+    "file": "20260917015155_005_drop_lifecycle_and_assignment_integrity.sql",
+    "sha256": "6d7291b7cb6cf72182f5125652670e11b5065a220139bb7aa17ff03db2c0856e",
+    "md5": "b79cde361a826c76505105f93b55c0a4"
+  },
+  {
+    "file": "20260917015233_006_drop_content_and_fulfillment.sql",
+    "sha256": "bce681d06389141e1c2b6ec3f5a96152b030b84ce442bbe7ddd003cec90da332",
+    "md5": "ca7b1f1e4b75680f92b659bfff68f740"
+  },
+  {
+    "file": "20260917020545_005_drop_assets_storage.sql",
+    "sha256": "c760c2b0da617f4b153c06970921ea31df6742aa49cd0786b0b8c8acaf7c21d4",
+    "md5": "14f896e642340c9ae5ee3eb5b05a7a56"
+  },
+  {
+    "file": "20260919211540_007_admin_publication_media_integrity.sql",
+    "sha256": "1944b7ed9760d78ef3ad419a62df36e7ca0acc516d0986106b3c6f61bed8bb35",
+    "md5": "35aae9518a0c9ade2cfbf9bb5f61841f"
+  },
+  {
+    "file": "20260919212245_008_admin_inventory_view_access.sql",
+    "sha256": "4a07bab69e34f32ea311c2bded039a3fb0350ac7afc0fbefd1a7185413738838",
+    "md5": "f877ce024e972eae723d1ef59e77b3ba"
+  },
+  {
+    "file": "20260922132400_009_orders_and_inventory_holds.sql",
+    "sha256": "ed37bce853b5778722febe30ce8192eb37eeede73f50a9f947e9c95e545eceea",
+    "md5": "7934bdd54e5c8dd6d9892a9f855212c7"
+  },
+  {
+    "file": "20260922132420_010_inventory_engine.sql",
+    "sha256": "099430a6efe1dc4ddd22fd97acc44bc38a9af2172ed4639c9f054ee6a19b9f2a",
+    "md5": "91b8aeca205ca7527513586e83a41e72"
+  },
+  {
+    "file": "20260922132439_011_pending_orders.sql",
+    "sha256": "85627b7f71f79464f6b00ddf390d2905c79fba305d83e4e6f5066d921a3ac517",
+    "md5": "7c4cf90c5611c00b4068d53b1d267d23"
+  },
+  {
+    "file": "20260922133228_012_checkout_api_boundary.sql",
+    "sha256": "9b35e19de62943bb87eab2ee7a226630bdb49d471125eba584cd889960ac215e",
+    "md5": "98030c0af35a81abf664f9bba3ed1c0d"
+  },
+  {
+    "file": "20260928141301_013_payment_domains.sql",
+    "sha256": "23b2732e96f0b5e242544811f0ebca256c514603691db30b7973ca77f6123c44",
+    "md5": "26f02e850b2ef40475b51488c5c08b94"
+  },
+  {
+    "file": "20260928141305_014_payment_checkout.sql",
+    "sha256": "9828d68f052c3dc589797c1510c25f9de05341b699a194cd523041aeeb46547f",
+    "md5": "589cfda1544d0b1723ec141a4e30223b"
+  },
+  {
+    "file": "20260928141309_015_payment_finalization.sql",
+    "sha256": "5a93d7c779bf77d3c37c092c85d23aa4bbf098db8c9f6738c4ed07b30deace46",
+    "md5": "6bf060db46b8845ed56452db99ba952c"
+  },
+  {
+    "file": "20260929033116_016_payment_replay_integrity.sql",
+    "sha256": "654340831e3bd8c2ea3141edc85d095d352e6befd4e955e0319584849decdeab",
+    "md5": "795b8d51be6c99f242ddda15d33d236b"
+  },
+  {
+    "file": "20260929141829_017_recurrente_flat_webhook_contract.sql",
+    "sha256": "52e009946070282b34f1f88d43983064af319db62cd5d965f934145f5218b28b",
+    "md5": "587020dad5aaa1473823b0954cb6242a"
+  },
+  {
+    "file": "20260930180615_018_unified_webhook_sandbox_environment.sql",
+    "sha256": "ea7e0ec3159bcc165fd5963f0272e94d14369cd47391e57081a98cce3d2d1c35",
+    "md5": "bc2a56fcb2f7c3813dc3ce52c784775a"
+  },
+  {
+    "file": "20261005050000_019_operations_domain.sql",
+    "sha256": "46663e70b2d498dfab8e4fd3daeceab4e8f5923c299aa9d4ffdaad6d6cba6f70",
+    "md5": "a9c0778c48259c2d4aa5d347bd84d0fd"
+  },
+  {
+    "file": "20261005051000_020_operations_engine.sql",
+    "sha256": "cf2b3062cec77a3ec040ee81c054f4428f2c3911db13ba4ef016f3c50f09dbe7",
+    "md5": "c8b49c0b96c932442390cf6908182826"
+  },
+  {
+    "file": "20261006010000_021_slot_capacity_delivery_pin.sql",
+    "sha256": "07faa8fbd723356d6a769c945243de870b92b01c0e68900e80ad9ac6dff73181",
+    "md5": "322bf686722709ff67bbb6a3ece5f861"
+  },
+  {
+    "file": "20261006011000_022_operations_workflows.sql",
+    "sha256": "03872538c461dff183ea5309e16e4ee5c2c2766d07a3aeccc766cb6a58b17124",
+    "md5": "cbc6d4fc7a8528c9d4b64ef52d65278c"
+  },
+  {
+    "file": "20261007010000_023_commerce_reservation.sql",
+    "sha256": "c143e0ea85fd4f683c2a5fb7788701609418ebc49e7b051b7699f5a77b68b847",
+    "md5": "43ae5da1912edb1bb4812fb0cab502ca"
+  },
+  {
+    "file": "20261007011000_024_assisted_commerce.sql",
+    "sha256": "0145e15a5bbbe5b3d28941a9c58c12a01e221d505a1f783f05a7000d957073e7",
+    "md5": "39a4dbf546deb8e4bb4822f1d85754b7"
+  },
+  {
+    "file": "20261007012000_025_customer_access.sql",
+    "sha256": "1a9fa087dcff2963724a85c4e34c2bf47c9474e8f8f583e3511fb361b2e0726f",
+    "md5": "4204111da5fe50fa5b671daa28acc639"
+  },
+  {
+    "file": "20261008100000_026_release_retention.sql",
+    "sha256": "c6970eda5ce21e3403596d16f121ed10bc2d10d4e278e1de7a35fd22d5334c27",
+    "md5": "2855ba81c57a9a5ca6ea1f845aae630b"
+  },
+  {
+    "file": "20261008101000_027_release_reports.sql",
+    "sha256": "0787aef77fa6dfe23b3ef0d154db5c630e0144ea19b81eda28e410a98e2d09d3",
+    "md5": "783fe5d9483c85b43aa2e01b3e6c5b87"
+  }
+]

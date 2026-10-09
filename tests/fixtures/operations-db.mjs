@@ -63,3 +63,10 @@ export async function opsFixtureUser(name){
  const c=new pg.Client({connectionString:url});await c.connect();
  try{return (await c.query('select user_id from public.operator_profiles where display_name=$1 order by created_at desc limit 1',[`04B ${name}`])).rows[0]?.user_id;}finally{await c.end();}
 }
+
+export async function releaseFixture(){
+ const url=process.env.DEIPO_TEST_DATABASE_URL;
+ if(!url||!['localhost','127.0.0.1','[::1]'].includes(new URL(url).hostname))throw Error('Local fixture required');
+ const c=new pg.Client({connectionString:url});await c.connect();
+ try{return {drop:(await c.query("select d.id from public.drops d join public.drop_operations_closeouts c on c.drop_id=d.id where d.name='ACCEPTANCE / NOT CUSTOMER DATA / 04D' order by c.closed_at desc limit 1")).rows[0]?.id};}finally{await c.end();}
+}

@@ -2,6 +2,7 @@ import 'server-only';
 import { PaymentError } from '../errors';
 import { recurrenteConfig } from './config';
 import type { CheckoutResult, PaymentPreparation } from './types';
+import { enabledPaymentMethods } from '../../commerce/payment-methods';
 const base = 'https://app.recurrente.com/api';
 export function providerCheckoutUrl(value: unknown) {
   if (
@@ -17,7 +18,9 @@ export function bankTransferMemo(code:string) {
  if(!/^D-[A-F0-9]{12}$/.test(code))throw new PaymentError('PAYMENT_NOT_AVAILABLE');
  return `DEIPO${code.replace('-','')}`;
 }
-export function checkoutBody(p: PaymentPreparation, origin: string) {
+export function checkoutBody(p: PaymentPreparation, origin: string, mode = process.env.NEXT_PUBLIC_PAYMENT_METHODS) {
+  const methods = enabledPaymentMethods(mode);
+  if (!methods.length) throw new PaymentError('PAYMENTS_NOT_CONFIGURED');
   if (!p.item || !p.order_code || p.attempt.currency !== 'GTQ')
     throw new PaymentError('PAYMENT_NOT_AVAILABLE');
   const { item } = p;
@@ -42,7 +45,7 @@ export function checkoutBody(p: PaymentPreparation, origin: string) {
     quantity,
     currency: 'GTQ',
     charge_type: 'one_time',
-    payment_method_types: ['card', 'bank_transfer'],
+    payment_method_types: methods,
     available_installments: [],
     billing_info_requirement: 'none',
   });
@@ -54,7 +57,7 @@ export function checkoutBody(p: PaymentPreparation, origin: string) {
     items.push(line('Entrega', p.delivery_fee_minor, 1));
   return {
     items,
-    bank_transfer_memo: bankTransferMemo(p.order_code),
+    ...(methods.includes('bank_transfer') ? { bank_transfer_memo: bankTransferMemo(p.order_code) } : {}),
     success_url: `${origin}/success`,
     cancel_url: `${origin}/checkout?payment=cancelled`,
     expires_at: p.attempt.expires_at,
@@ -121,7 +124,7 @@ export function recurrenteClient(
       p: PaymentPreparation,
       origin: string,
     ): Promise<CheckoutResult> {
-      const body = checkoutBody(p, origin);
+      const body = checkoutBody(p, origin, env.NEXT_PUBLIC_PAYMENT_METHODS);
       // The key prefix cannot distinguish named Sandbox from legacy TEST. Read-only
       // preflight verifies /test before any provider mutation, on every creation.
       const identity = await request('/test');
@@ -149,9 +152,9 @@ export function recurrenteClient(
       )
         throw new PaymentError('PAYMENT_CREATION_UNKNOWN', true);
       if (!Array.isArray(data.payment_method_types) ||
-          !data.payment_method_types.includes('card') || !data.payment_method_types.includes('bank_transfer') ||
-          data.payment_method_types.some((method) => !['card','bank_transfer'].includes(String(method))) ||
-          data.bank_transfer_memo !== body.bank_transfer_memo)
+          data.payment_method_types.length !== body.items[0].payment_method_types.length ||
+          body.items[0].payment_method_types.some(method => !(data.payment_method_types as unknown[]).includes(method)) ||
+          (body.bank_transfer_memo !== undefined && data.bank_transfer_memo !== body.bank_transfer_memo))
         throw new PaymentError('PAYMENT_METHODS_UNAVAILABLE',true);
       const checkout_url = providerCheckoutUrl(data.checkout_url);
       if (!checkout_url.endsWith('/' + data.id))
@@ -159,7 +162,7 @@ export function recurrenteClient(
       return {
         status: 'checkout_ready',
         payment_method_types: data.payment_method_types as string[],
-        bank_transfer_memo: body.bank_transfer_memo,
+        bank_transfer_memo: body.bank_transfer_memo ?? null,
         id: data.id,
         checkout_url,
         provider_status: data.status,

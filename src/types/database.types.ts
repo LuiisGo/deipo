@@ -229,6 +229,7 @@ export type Database = {
       }
       drop_slots: {
         Row: {
+          max_units: number | null
           capacity: number | null
           created_at: string
           drop_id: string
@@ -240,6 +241,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          max_units?: number | null
           capacity?: number | null
           created_at?: string
           drop_id: string
@@ -251,6 +253,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          max_units?: number | null
           capacity?: number | null
           created_at?: string
           drop_id?: string
@@ -280,6 +283,9 @@ export type Database = {
       }
       drops: {
         Row: {
+          bank_transfer_grace_seconds: number | null
+          tracker_access_seconds: number | null
+          assisted_draft_retention_days: number | null
           capacity: number
           created_at: string
           created_by: string | null
@@ -308,6 +314,9 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          bank_transfer_grace_seconds?: number | null
+          tracker_access_seconds?: number | null
+          assisted_draft_retention_days?: number | null
           capacity: number
           created_at?: string
           created_by?: string | null
@@ -336,6 +345,9 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          bank_transfer_grace_seconds?: number | null
+          tracker_access_seconds?: number | null
+          assisted_draft_retention_days?: number | null
           capacity?: number
           created_at?: string
           created_by?: string | null
@@ -367,6 +379,8 @@ export type Database = {
       }
       inventory_holds: {
         Row: {
+          payment_pending_until: string | null
+          payment_pending_attempt_id: string | null
           checkout_session_hash: string
           converted_at: string | null
           created_at: string
@@ -379,6 +393,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          payment_pending_until?: string | null
+          payment_pending_attempt_id?: string | null
           checkout_session_hash: string
           converted_at?: string | null
           created_at?: string
@@ -391,6 +407,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          payment_pending_until?: string | null
+          payment_pending_attempt_id?: string | null
           checkout_session_hash?: string
           converted_at?: string | null
           created_at?: string
@@ -531,6 +549,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          sales_channel: string
+          assisted_by_user_id: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           created_at: string
@@ -538,6 +558,8 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           customer_phone: string
+          delivery_latitude: number | null
+          delivery_longitude: number | null
           delivery_address: string | null
           delivery_fee_minor: number
           delivery_notes: string | null
@@ -561,6 +583,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          sales_channel?: string
+          assisted_by_user_id?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           created_at?: string
@@ -568,6 +592,8 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           customer_phone: string
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
           delivery_address?: string | null
           delivery_fee_minor: number
           delivery_notes?: string | null
@@ -591,6 +617,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          sales_channel?: string
+          assisted_by_user_id?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           created_at?: string
@@ -598,6 +626,8 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
           delivery_address?: string | null
           delivery_fee_minor?: number
           delivery_notes?: string | null
@@ -646,6 +676,8 @@ export type Database = {
       }
       payment_attempts: {
         Row: {
+          provider_payment_methods: Json | null
+          provider_bank_transfer_memo: string | null
           amount_minor: number
           attempt_number: number
           checkout_url: string | null
@@ -675,6 +707,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          provider_payment_methods?: Json | null
+          provider_bank_transfer_memo?: string | null
           amount_minor: number
           attempt_number: number
           checkout_url?: string | null
@@ -704,6 +738,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          provider_payment_methods?: Json | null
+          provider_bank_transfer_memo?: string | null
           amount_minor?: number
           attempt_number?: number
           checkout_url?: string | null
@@ -1021,6 +1057,49 @@ export type Database = {
       }
     }
     Functions: {
+      ops_retention_configure: { Args:{p_drop:string;p_days:number|null};Returns:undefined }
+      ops_redact_expired: { Args:{p_drop:string};Returns:Json }
+      ops_drop_report: { Args:{p_drop:string};Returns:Json }
+      ops_close_report: { Args:{p_drop:string};Returns:Json }
+      ops_release_readiness: { Args:{p_drop:string};Returns:Json }
+      sales_create_draft: { Args:{p_drop:string;p_quantity:number;p_channel:string;p_details:Json;p_hash:string;p_expires:string};Returns:string }
+      sales_claim: { Args:{p_hash:string;p_session:string};Returns:Json }
+      sales_desk: { Args:{p_drop:string};Returns:Json }
+      sales_configure: { Args:{p_drop:string;p_grace:number|null;p_tracker:number|null;p_reason:string};Returns:undefined }
+      customer_claim_access: { Args:{p_session:string;p_hash:string;p_envelope:string};Returns:Json }
+      sales_rotate_access: { Args:{p_id:string;p_hash:string;p_envelope:string;p_expires:string};Returns:undefined }
+      sales_print: { Args:{p_id:string;p_format:string};Returns:Json }
+      ops_save_operator: { Args: { p_user_id:string;p_role:string;p_active:boolean;p_name:string;p_reason:string }; Returns:undefined }
+      ops_operators: { Args:Record<PropertyKey,never>;Returns:Json }
+      ops_drops: { Args:Record<PropertyKey,never>;Returns:Json }
+      ops_sync_paid_orders: { Args:{p_drop_id:string};Returns:Json }
+      ops_bulk_wave: { Args:{p_drop_id:string;p_wave_id:string;p_orders:Json;p_action:string};Returns:number }
+      ops_pack_check: { Args:{p_id:string;p_version:number;p_component:string;p_quantity:number};Returns:number }
+      ops_issues: { Args:{p_id:string};Returns:Json }
+      ops_lookup: { Args:{p_drop_id:string;p_code?:string|null;p_hash?:string|null};Returns:string|null }
+      ops_set_operator: { Args: { p_user_id: string; p_role: string; p_active: boolean; p_reason: string }; Returns: undefined }
+      ops_configure_drop: { Args: { p_drop_id: string; p_config: Json; p_components: Json; p_reason: string }; Returns: undefined }
+      ops_provision: { Args: { p_order_id: string }; Returns: string }
+      ops_transition: { Args: { p_id: string; p_version: number; p_to: string; p_reason?: string | null; p_sealed?: boolean; p_override?: boolean }; Returns: number }
+      ops_check_packing: { Args: { p_id: string; p_component: string; p_quantity: number }; Returns: undefined }
+      ops_create_wave: { Args: { p_drop_id: string; p_sequence: number; p_units: number; p_target: string }; Returns: string }
+      ops_wave_action: { Args: { p_wave_id: string; p_action: string }; Returns: undefined }
+      ops_assign_wave: { Args: { p_id: string; p_wave_id: string }; Returns: undefined }
+      ops_record_production: { Args: { p_wave_id: string; p_kind: string; p_quantity: number; p_request_id: string; p_reason: string }; Returns: string }
+      ops_assign_driver: { Args: { p_id: string; p_driver: string; p_reason: string }; Returns: undefined }
+      ops_open_issue: { Args: { p_id: string; p_reason: string }; Returns: string }
+      ops_resolve_issue: { Args: { p_issue_id: string; p_resolution: string }; Returns: undefined }
+      ops_override_logistics: { Args: { p_id: string; p_logistics: Json; p_reason: string }; Returns: string }
+      ops_rotate_access: { Args: { p_id: string; p_hash: string; p_expires_at: string }; Returns: undefined }
+      ops_revoke_access: { Args: { p_id: string }; Returns: undefined }
+      ops_update_schedule: { Args: { p_drop_id: string; p_cutoff: string | null; p_prep_minutes: number | null; p_delivery_minutes: number | null; p_grace_minutes: number; p_reason: string }; Returns: undefined }
+      ops_queue: { Args: { p_drop_id: string; p_expected_role?: string }; Returns: Json }
+      ops_waves: { Args: { p_drop_id: string }; Returns: Json }
+      ops_timeline: { Args: { p_id: string }; Returns: Json }
+      ops_command_center: { Args: Record<PropertyKey, never>; Returns: Json }
+      ops_customer_tracker: { Args: { p_hash: string }; Returns: Json }
+      ops_current_role: { Args: Record<PropertyKey, never>; Returns: string | null }
+
       admin_cancel_pending_order: {
         Args: { p_order_id: string; p_reason: string }
         Returns: undefined

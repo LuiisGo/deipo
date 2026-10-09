@@ -1,0 +1,23 @@
+deipo-web-v0@0.2.0 <repository>
+├─┬ @tailwindcss/postcss@4.3.3
+│ ├─┬ @tailwindcss/node@4.3.3
+│ │ └── source-map-js@1.2.2
+│ └─┬ postcss@8.5.28
+│   └── source-map-js@1.2.2 deduped
+├─┬ eslint-config-next@16.3.8
+│ ├─┬ @next/eslint-plugin-next@16.3.8
+│ │ └─┬ fast-glob@3.3.1
+│ │   └─┬ micromatch@4.0.8
+│ │     └── braces@3.0.3
+│ └─┬ typescript-eslint@8.70.0
+│   └─┬ @typescript-eslint/typescript-estree@8.70.0
+│     └─┬ minimatch@10.2.6
+│       └── brace-expansion@5.0.12
+├─┬ eslint@9.39.5
+│ └─┬ minimatch@3.1.5
+│   └── brace-expansion@1.1.21
+├─┬ next@16.3.8
+│ ├─┬ postcss@8.5.23
+│ │ └── source-map-js@1.2.2 deduped
+│ └── sharp@0.35.5 deduped
+└── sharp@0.35.5

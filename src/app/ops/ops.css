@@ -1,0 +1,333 @@
+.ops-root {
+  min-height: 100vh;
+  background: #f5f1e8;
+  color: #121212;
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+.ops-root * {
+  box-sizing: border-box;
+}
+.ops-root button,
+.ops-button {
+  min-height: 48px;
+  padding: 12px 18px;
+  background: #121212;
+  color: #fff;
+  border: 1px solid #121212;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.ops-root button:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+.ops-root .secondary {
+  background: transparent;
+  color: #121212;
+}
+.ops-root a {
+  color: inherit;
+}
+.ops-root button:focus-visible,
+.ops-root a:focus-visible,
+.ops-root input:focus-visible,
+.ops-root select:focus-visible,
+.ops-root summary:focus-visible {
+  outline: 3px solid #d3401f;
+  outline-offset: 3px;
+}
+.ops-root h1 {
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1.05;
+  margin: 12px 0 24px;
+  letter-spacing: -0.04em;
+}
+.ops-root h2 {
+  font-size: 24px;
+  line-height: 1.15;
+  margin: 10px 0 18px;
+}
+.ops-root h3 {
+  font-size: 18px;
+}
+.ops-root p {
+  line-height: 1.5;
+}
+.ops-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 4vw;
+  border-bottom: 1px solid #121212;
+}
+.ops-header .deipo-logo {
+  width: 100px;
+}
+.ops-header > a {
+  max-width: 110px;
+}
+.ops-header img {
+  width: 100%;
+  height: auto;
+}
+.ops-header .eyebrow {
+  font-size: 10px;
+}
+.ops-main {
+  max-width: 1440px;
+  padding: 32px 4vw 80px;
+  margin: auto;
+}
+.ops-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.ops-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+.ops-links > a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.ops-root label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 0;
+  margin-bottom: 16px;
+}
+.ops-root input,
+.ops-root select,
+.ops-root textarea {
+  width: 100%;
+  max-width: 100%;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid #777;
+  background: #fff;
+  color: #121212;
+  font: inherit;
+  font-size: 16px;
+  border-radius: 0;
+}
+.ops-root input[type="checkbox"] {
+  width: 24px;
+  min-height: 24px;
+  height: 24px;
+  accent-color: #d3401f;
+}
+.ops-root label:has(input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+  min-height: 44px;
+}
+.ops-root fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.ops-root details {
+  border-top: 1px solid #b8b3ab;
+  padding: 12px 0;
+}
+.ops-root summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.ops-root details form {
+  margin-top: 18px;
+}
+.ops-login {
+  max-width: 480px;
+  padding: 60px 24px;
+  margin: auto;
+}
+.ops-login .deipo-logo {
+  width: 140px;
+}
+.ops-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  border-top: 3px solid #121212;
+  border-bottom: 1px solid #121212;
+  padding: 20px 0;
+  margin: 24px 0;
+}
+.ops-message {
+  padding: 18px;
+  border-left: 5px solid #d3401f;
+  background: #fff;
+}
+.ops-filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 16px;
+  margin: 28px 0;
+}
+.ops-orders {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.ops-order {
+  background: #fff;
+  border: 1px solid #ccc6ba;
+  padding: 24px;
+  min-width: 0;
+}
+.ops-order h2 {
+  font-size: clamp(22px, 2.6vw, 34px);
+  overflow-wrap: anywhere;
+  letter-spacing: -0.02em;
+}
+.ops-order .eyebrow {
+  font-size: 10px;
+}
+.ops-person {
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.ops-order.status-ready {
+  border-top: 5px solid #d3401f;
+}
+.ops-order.status-in_prep {
+  border-top: 5px solid #121212;
+}
+.ops-component {
+  border-top: 1px solid #ddd6c8;
+  padding: 14px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ops-component > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+.ops-component button {
+  min-width: 48px;
+}
+.ops-ticket {
+  padding-bottom: 12px;
+}
+.ops-bulk {
+  background: #e9e3d8;
+  padding: 20px;
+  margin-bottom: 28px;
+}
+.ops-bulk form fieldset {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 18px;
+  align-items: end;
+}
+.ops-wave-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.ops-wave {
+  border-top: 2px solid #121212;
+  padding: 16px 0;
+}
+.ops-empty {
+  padding: 36px 0;
+  border-top: 1px solid #121212;
+}
+.ops-scanner {
+  margin: 24px 0;
+}
+.ops-order button {
+  max-width: 100%;
+}
+.ops-logistics {
+  padding: 12px 0;
+}
+.ops-sync {
+  margin-top: 8px;
+}
+@media (max-width: 1000px) {
+  .ops-orders,
+  .ops-wave-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ops-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .ops-header {
+    padding: 16px;
+    gap: 8px;
+  }
+  .ops-header .eyebrow {
+    max-width: 80px;
+    line-height: 1.4;
+  }
+  .ops-main {
+    padding: 28px 16px 64px;
+  }
+  .ops-heading {
+    display: block;
+  }
+  .ops-heading > button {
+    width: 100%;
+  }
+  .ops-orders,
+  .ops-wave-grid {
+    grid-template-columns: 1fr;
+  }
+  .ops-order {
+    padding: 20px;
+  }
+  .ops-order h2 {
+    font-size: 30px;
+  }
+  .ops-filters {
+    gap: 12px;
+  }
+  .ops-bulk form fieldset {
+    grid-template-columns: 1fr;
+  }
+  .ops-bulk button,
+  .ops-order form button {
+    width: 100%;
+  }
+  .ops-sync {
+    width: 100%;
+  }
+  .ops-header > a {
+    max-width: 84px;
+  }
+  .ops-summary {
+    gap: 10px 18px;
+  }
+}

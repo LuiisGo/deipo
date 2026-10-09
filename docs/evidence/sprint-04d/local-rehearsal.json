@@ -1,0 +1,218 @@
+{
+  "classification": "FIXTURE-CONFIRMED / LOCAL",
+  "drop": "2f330b76-6110-4d28-8e40-125c3c76fe76",
+  "orders": 40,
+  "units": 80,
+  "oversell": 0,
+  "slot_overbooking": 0,
+  "lost_paid_orders": 0,
+  "accounted_orders": 40,
+  "completed": 39,
+  "open_pickup_no_show": 1,
+  "on_time_kpi": "NOT VALIDATED: synthetic accelerated operation",
+  "pending": [
+    {
+      "n": 1,
+      "at": "2026-10-08T20:29:46.438Z",
+      "until": "2026-10-08T20:30:46.436Z"
+    },
+    {
+      "n": 3,
+      "at": "2026-10-08T20:29:46.472Z",
+      "until": "2026-10-08T20:30:46.470Z"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-08T20:29:46.518Z",
+      "until": "2026-10-08T20:30:46.517Z"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-08T20:29:46.604Z",
+      "until": "2026-10-08T20:30:46.598Z"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-08T20:29:46.673Z",
+      "until": "2026-10-08T20:30:46.671Z"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-08T20:29:46.722Z",
+      "until": "2026-10-08T20:30:46.720Z"
+    },
+    {
+      "n": 13,
+      "at": "2026-10-08T20:29:46.762Z",
+      "until": "2026-10-08T20:30:46.760Z"
+    },
+    {
+      "n": 15,
+      "at": "2026-10-08T20:29:46.816Z",
+      "until": "2026-10-08T20:30:46.814Z"
+    },
+    {
+      "n": 17,
+      "at": "2026-10-08T20:29:46.862Z",
+      "until": "2026-10-08T20:30:46.861Z"
+    },
+    {
+      "n": 19,
+      "at": "2026-10-08T20:29:46.899Z",
+      "until": "2026-10-08T20:30:46.898Z"
+    },
+    {
+      "n": 21,
+      "at": "2026-10-08T20:29:46.933Z",
+      "until": "2026-10-08T20:30:46.932Z"
+    },
+    {
+      "n": 23,
+      "at": "2026-10-08T20:29:46.975Z",
+      "until": "2026-10-08T20:30:46.972Z"
+    },
+    {
+      "n": 25,
+      "at": "2026-10-08T20:29:47.025Z",
+      "until": "2026-10-08T20:30:47.021Z"
+    },
+    {
+      "n": 27,
+      "at": "2026-10-08T20:29:47.091Z",
+      "until": "2026-10-08T20:30:47.089Z"
+    },
+    {
+      "n": 29,
+      "at": "2026-10-08T20:29:47.141Z",
+      "until": "2026-10-08T20:30:47.140Z"
+    },
+    {
+      "n": 31,
+      "at": "2026-10-08T20:29:47.184Z",
+      "until": "2026-10-08T20:30:47.182Z"
+    },
+    {
+      "n": 33,
+      "at": "2026-10-08T20:29:47.222Z",
+      "until": "2026-10-08T20:30:47.220Z"
+    },
+    {
+      "n": 35,
+      "at": "2026-10-08T20:29:47.263Z",
+      "until": "2026-10-08T20:30:47.262Z"
+    },
+    {
+      "n": 37,
+      "at": "2026-10-08T20:29:47.305Z",
+      "until": "2026-10-08T20:30:47.300Z"
+    },
+    {
+      "n": 39,
+      "at": "2026-10-08T20:29:47.364Z",
+      "until": "2026-10-08T20:30:47.361Z"
+    }
+  ],
+  "report": {
+    "drop": {
+      "id": "2f330b76-6110-4d28-8e40-125c3c76fe76",
+      "name": "ACCEPTANCE / NOT CUSTOMER DATA / 04D",
+      "number": 565628971,
+      "capacity": 80,
+      "currency": "GTQ"
+    },
+    "as_of": "2026-10-08T14:29:48.22943-06:00",
+    "slots": [
+      {
+        "units": 28,
+        "orders": 14,
+        "ends_at": "19:00:00",
+        "max_units": null,
+        "starts_at": "18:00:00",
+        "max_orders": 14
+      },
+      {
+        "units": 25,
+        "orders": 13,
+        "ends_at": "20:00:00",
+        "max_units": null,
+        "starts_at": "19:00:00",
+        "max_orders": 13
+      },
+      {
+        "units": 27,
+        "orders": 13,
+        "ends_at": "21:00:00",
+        "max_units": null,
+        "starts_at": "20:00:00",
+        "max_orders": 13
+      }
+    ],
+    "issues": {
+      "open": 1,
+      "resolved": 1,
+      "pickup_no_show": 1,
+      "delivery_failure": 1
+    },
+    "totals": {
+      "units": 80,
+      "orders": 40,
+      "pickup": 20,
+      "delivery": 20,
+      "completed": 39,
+      "completed_late": 39,
+      "review_required": 0,
+      "avg_prep_seconds": 0.450663575,
+      "timing_sample_count": 39,
+      "commercial_cancelled": 0,
+      "operational_cancelled": 0,
+      "operational_unresolved": 1,
+      "gross_order_value_minor": 1400000,
+      "paid_without_fulfillment": 0,
+      "verified_paid_amount_minor": 1400000,
+      "committed_paid_amount_minor": 1400000,
+      "avg_packing_to_ready_seconds": 0.002255375,
+      "avg_ready_to_completion_seconds": 0.009114051282051281
+    },
+    "production": {
+      "waste": 1,
+      "damaged": 1,
+      "produced": 80,
+      "replacement": 1
+    },
+    "sold_units": 80,
+    "timing_note": "Recorded timestamps only; synthetic rehearsal does not validate an on-time SLA.",
+    "sales_channels": [
+      {
+        "units": 27,
+        "orders": 13,
+        "gross_minor": 472500,
+        "sales_channel": "admin_assisted"
+      },
+      {
+        "units": 25,
+        "orders": 13,
+        "gross_minor": 437500,
+        "sales_channel": "whatsapp_manual"
+      },
+      {
+        "units": 28,
+        "orders": 14,
+        "gross_minor": 490000,
+        "sales_channel": "web"
+      }
+    ],
+    "payment_methods": [
+      {
+        "method": "bank_transfer",
+        "orders": 20,
+        "verified_paid_minor": 367500
+      },
+      {
+        "method": "payment",
+        "orders": 20,
+        "verified_paid_minor": 1032500
+      }
+    ],
+    "sold_out_percent": 100
+  }
+}

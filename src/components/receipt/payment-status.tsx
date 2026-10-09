@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import {TrackerAccess} from '@/components/commerce/tracker-access';
 import { useEffect, useState } from 'react';
 import { DeipoLogo } from '@/components/brand/deipo-logo';
 import { minorMoney } from '@/lib/deipo/checkout';
@@ -14,8 +15,8 @@ const messages: Record<PaymentState['status'], [string, string]> = {
     'La confirmación puede tardar unos momentos. Esperamos la respuesta del proveedor.',
   ],
   bank_transfer_pending: [
-    'Transferencia pendiente.',
-    'Tu pedido todavía no está confirmado. Lo confirmaremos cuando el pago se acredite y podamos asignar las unidades. La reserva conserva su vencimiento original.',
+    'TRANSFERENCIA EN PROCESO',
+    'Tu pedido todavía no está confirmado. Lo confirmaremos cuando el pago se acredite y podamos asignar las unidades. Consultá abajo el plazo vigente de reserva.',
   ],
   paid: ['Pago confirmado.', 'Tu inventario está asignado.'],
   failed: [
@@ -104,6 +105,7 @@ export function PaymentStatus({ initial }: { initial: PaymentState | null }) {
         <p>{message[1]}</p>
       </div>
       {state?.order_code && <p>{state.order_code}</p>}
+      {state?.reservation_until && <p>Reserva hasta {new Intl.DateTimeFormat('es-GT',{dateStyle:'short',timeStyle:'short',hourCycle:'h23',timeZone:'America/Guatemala'}).format(new Date(state.reservation_until))} (Guatemala).</p>}
       {error && <p role="alert">{error}</p>}
       <button
         className="button"
@@ -219,6 +221,7 @@ function VerifiedReceipt({ receipt: r }: { receipt: PaymentReceipt }) {
               </strong>
               <small>{r.fulfillment_date}</small>
             </div>
+            <TrackerAccess />
             <p className="receipt-good">
               GOOD
               <br />

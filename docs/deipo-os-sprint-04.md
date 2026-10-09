@@ -1217,3 +1217,13 @@ Reproduce using Node22 and a disposable loopback PostgreSQL17.6 URL in `DEIPO_TE
 Production postflight confirms the same001–018 migration history, zero orders, zero ordering-enabled drops, null CURRENT/NEXT and TTL600. Repeating the original fingerprint expression `md5(string_agg(to_jsonb(d)::text,'' order by id))` gives the exact baseline `056d3ea1d4fc18e228759510e1f67d9d`. The published Production deploy still points to main67099f7. A JSON-array hash is a different serialization and must not be compared to this string-aggregation baseline.
 
 Final Chrome Admin/Ops rerun:24/24 passed including the new release report. Total final browser coverage: Chrome92 (26 checkout +24 Admin/Ops +42 storefront), WebKit50 (26 checkout +24 Admin/Ops). Physical device and actual remote customer acceptance remain separate pending gates.
+
+### Published implementation checkpoint and Preview acceptance
+
+Implementation commit and normal-push remote SHA: `f7d7495c1876226443a5efd8ef79aa3c8c52fd5c`. [Draft PR5](https://github.com/LuiisGo/deipo/pull/5) targets main and remains unmerged. The GitHub connector lacked PR-write permission; the existing Git HTTPS authentication created the Draft PR without printing or persisting credentials.
+
+Netlify deploy `6ac84ae644082b0008565239` is READY, context deploy-preview, branch feat/deipo-os-sprint-04-operations, exact commit f7d7495. URL: [Deploy Preview5](https://deploy-preview-5--deipo.netlify.app). A documentation-only follow-up records this evidence; its PR head can be verified separately without changing the tested implementation.
+
+Fresh zero-cookie Chrome at390px passed read-only runtime smoke: direct `/admin/login`200, protected `/admin`→login, `/ops/login`200, storefront200/ORDERS CLOSED, invalid buy/order access with no-store/no-referrer and no horizontal overflow. Request IDs and status/header facts are preserved in `preview-smoke.json`; the invalid strings are not real capabilities. This confirms direct-entry runtime, not authenticated staff or a completed payment journey. The Preview still needs its explicit04D settings, acceptance Auth/users and operational fixture activation.
+
+Post-Preview Netlify project check still reports published Production deploy `6abddcecea4c8a000840c3cb`; remote main remains `67099f7d847764941412900296cb938c88c989a0`. Production database postflight and fingerprint are unchanged as recorded above. No Production env mutations, merge, LIVE payments, cleanup or Sprint05 work. Final classification stays **NO-GO for launch** with the enumerated acceptance/business/privacy blockers.

@@ -1,0 +1,80 @@
+[
+  {
+    "path": "/admin/login",
+    "status": 200,
+    "landed": "/admin/login",
+    "title": "Admin | deipo.",
+    "headings": [
+      "Iniciar sesión"
+    ],
+    "request_id": "01M4F6D36EY769207HGHWZP5CS",
+    "cache_control": "private, no-store",
+    "referrer_policy": "strict-origin-when-cross-origin",
+    "overflow": false
+  },
+  {
+    "path": "/admin",
+    "status": 200,
+    "landed": "/admin/login",
+    "title": "Admin | deipo.",
+    "headings": [
+      "Iniciar sesión"
+    ],
+    "request_id": "01M4F6D5YV4KYJMAMKCJPC85DG",
+    "cache_control": "private, no-store",
+    "referrer_policy": "strict-origin-when-cross-origin",
+    "overflow": false
+  },
+  {
+    "path": "/ops/login",
+    "status": 200,
+    "landed": "/ops/login",
+    "title": "deipo. · Operaciones | deipo.",
+    "headings": [
+      "Entrar a operación."
+    ],
+    "request_id": "01M4F6D74R4K6Z982E166MXTB0",
+    "cache_control": "private, no-store",
+    "referrer_policy": "strict-origin-when-cross-origin",
+    "overflow": false
+  },
+  {
+    "path": "/",
+    "status": 200,
+    "landed": "/",
+    "title": "deipo. — Limited food drops by chefs",
+    "headings": [
+      "ORDERS CLOSED."
+    ],
+    "request_id": "01M4F6D8DR6BW7AB9EJMG09P4H",
+    "cache_control": "private, no-store",
+    "referrer_policy": "strict-origin-when-cross-origin",
+    "overflow": false
+  },
+  {
+    "path": "/buy/invalid",
+    "status": 200,
+    "landed": "/buy/invalid",
+    "title": "Tu pedido asistido | deipo.",
+    "headings": [
+      "Tu drop te espera."
+    ],
+    "request_id": "01M4F6D9SX9RV396P2VDBWPYHV",
+    "cache_control": "private, no-store",
+    "referrer_policy": "no-referrer",
+    "overflow": false
+  },
+  {
+    "path": "/order/invalid",
+    "status": 200,
+    "landed": "/order/invalid",
+    "title": "Tu pedido | deipo.",
+    "headings": [
+      "Enlace no disponible."
+    ],
+    "request_id": "01M4F6DAZ3BRG36QA8A7BQQBG7",
+    "cache_control": "private,no-store",
+    "referrer_policy": "no-referrer",
+    "overflow": false
+  }
+]

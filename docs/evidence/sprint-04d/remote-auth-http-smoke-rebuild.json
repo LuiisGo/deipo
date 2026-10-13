@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-09T18:10:01.059Z",
+  "deploy": "6ac92d98a545c34b52d20db3",
+  "origin": "https://deploy-preview-5--deipo.netlify.app",
+  "kind": "Fresh HTTP requests without Cookie header; not authenticated browser acceptance",
+  "checks": [
+    {
+      "path": "/admin/login",
+      "status": 200,
+      "location": null,
+      "request_id": "01M4GXQ41HNNY2GJ8G1D90J7NV",
+      "cookie_header_sent": false,
+      "netlify_runtime_error": false,
+      "has_password_input": true
+    },
+    {
+      "path": "/admin",
+      "status": 307,
+      "location": "/admin/login",
+      "request_id": "01M4GXQ4JPX5MMHCV2JR6E6P28",
+      "cookie_header_sent": false,
+      "netlify_runtime_error": false,
+      "has_password_input": false
+    },
+    {
+      "path": "/ops/login",
+      "status": 200,
+      "location": null,
+      "request_id": "01M4GXQ4XGDYPRHJ1M8SWS5042",
+      "cookie_header_sent": false,
+      "netlify_runtime_error": false,
+      "has_password_input": true
+    }
+  ]
+}

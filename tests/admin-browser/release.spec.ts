@@ -1,0 +1,21 @@
+import {test,expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+test('founder sees 80-unit closeout, explicit readiness gaps and printable mobile report',async({page,request})=>{
+ test.skip(!process.env.DEIPO_TEST_DATABASE_URL,'Requires disposable local rehearsal');
+ const fixture=await request.get('http://127.0.0.1:54329/release-fixture');
+ const {drop}=await fixture.json();expect(drop,'Run test:release:rehearsal before this suite').toBeTruthy();
+ await request.get('http://127.0.0.1:54329/reset');await page.setViewportSize({width:390,height:844});
+ await page.goto('/admin/login');await page.getByLabel('Email',{exact:true}).fill('founder@example.test');await page.getByLabel('Contraseña',{exact:true}).fill('fixture-password');await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();
+ await expect(page).toHaveURL(/\/admin$/);
+ await page.goto(`/admin/operations/release?drop=${drop}`);
+ await expect(page.getByRole('heading',{name:'Cierre guardado'})).toBeVisible();
+ await expect(page.getByText(/Vendidas: 80/).first()).toBeVisible();
+ await expect(page.getByRole('button',{name:'REPORTE FINALIZADO'})).toBeDisabled();
+ await page.getByLabel('Días después de expirar un borrador no reclamado').fill('1');
+ await page.getByRole('button',{name:'GUARDAR POLÍTICA'}).click();await expect(page.getByRole('status')).toHaveText('Guardado.');
+ await page.getByRole('button',{name:'REDACTAR EXPIRADOS'}).click();await expect(page.getByRole('status')).toContainText('Borradores redactados:');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+ await page.emulateMedia({media:'print'});await expect(page.getByRole('button',{name:'REPORTE FINALIZADO'})).not.toBeVisible();
+ await page.screenshot({path:'/private/tmp/deipo-04d-closeout-print.png',fullPage:true});
+});

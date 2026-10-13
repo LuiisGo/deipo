@@ -58,7 +58,7 @@ test('session detection matches the configured project and SSR chunk format, not
   assert.equal(hasSupabaseSessionCookie([{name:'sb-127-auth-token.0', value:'session'}], 'http://127.0.0.1:54329'), true);
 });
 
-for (const path of ['/admin/login', '/admin', '/admin/orders', '/admin/drops']) {
+for (const path of ['/admin/login', '/admin', '/admin/orders', '/admin/drops','/ops/login','/ops/kitchen']) {
   test(`anonymous ${path} never constructs auth, calls claims, mutates cookies or fabricates a checkout session`, async (t) => {
     configureSupabase(t);
     const claims = t.mock.method(AuthClient.prototype, 'getClaims', async () => { throw new Error('Unexpected claims'); });
@@ -68,7 +68,7 @@ for (const path of ['/admin/login', '/admin', '/admin/orders', '/admin/drops']) 
     const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'WebSocket')!;
     let constructions = 0;
     Object.defineProperty(globalThis, 'WebSocket', {configurable:true, get() { constructions++; throw new Error('Unexpected Supabase construction'); }});
-    t.after(() => Object.defineProperty(globalThis, 'WebSocket', descriptor));
+    t.after(() => {if(descriptor)Object.defineProperty(globalThis, 'WebSocket', descriptor);else delete (globalThis as {WebSocket?:unknown}).WebSocket;});
     for (const cookie of ['', `${checkoutCookieName}=invalid`, 'sb-other-auth-token=unrelated', 'sb-127-auth-token-code-verifier=pkce']) {
       const request = new NextRequest(`https://bydeipo.com${path}`, {headers:{host:'bydeipo.com', ...(cookie ? {cookie} : {})}});
       const before = request.headers.get('cookie');

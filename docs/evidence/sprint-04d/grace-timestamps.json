@@ -1,0 +1,36 @@
+[
+  {
+    "scenario": "failed",
+    "original_expiry": "2026-10-08T20:40:20.359Z",
+    "extended_deadline": "2026-10-08T21:30:20.363Z",
+    "observed_at": "2026-10-08T20:30:20.364Z"
+  },
+  {
+    "scenario": "canceled",
+    "original_expiry": "2026-10-08T20:40:20.375Z",
+    "extended_deadline": "2026-10-08T21:30:20.378Z",
+    "observed_at": "2026-10-08T20:30:20.379Z"
+  },
+  {
+    "scenario": "succeeded",
+    "original_expiry": "2026-10-08T20:40:20.389Z",
+    "extended_deadline": "2026-10-08T21:30:20.392Z",
+    "observed_at": "2026-10-08T20:30:20.393Z"
+  },
+  {
+    "scenario": "timed_grace_started",
+    "original_expiry": "2026-10-08T20:30:22.410Z",
+    "extended_deadline": "2026-10-08T20:30:25.414Z",
+    "observed_at": "2026-10-08T20:30:20.415Z"
+  },
+  {
+    "scenario": "original_expiry_passed_reservation_active",
+    "observed_at": "2026-10-08T20:30:22.569Z",
+    "held_units": 1
+  },
+  {
+    "scenario": "grace_expired_before_late_success",
+    "observed_at": "2026-10-08T20:30:25.674Z",
+    "held_units": 0
+  }
+]

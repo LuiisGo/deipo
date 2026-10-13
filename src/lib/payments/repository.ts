@@ -58,6 +58,7 @@ export async function initiatePayment(token: string, origin: string) {
       p.attempt.internal_status === 'succeeded'
     )
       throw new PaymentError('PAYMENT_NOT_AVAILABLE');
+    if (p.attempt.internal_status === 'pending') throw new PaymentError('PAYMENT_PENDING');
     if (Date.parse(p.attempt.expires_at) <= Date.now())
       throw new PaymentError('HOLD_EXPIRED');
     return providerCheckoutUrl(p.attempt.checkout_url);

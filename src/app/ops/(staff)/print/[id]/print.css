@@ -1,0 +1,89 @@
+.print-workspace {
+  color: #121212;
+  background: #fff;
+  padding: 24px;
+  min-height: 100vh;
+}
+.print-controls {
+  max-width: 720px;
+  margin: 0 auto 24px;
+}
+.print-controls nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.print-controls button {
+  min-height: 48px;
+  margin: 12px 12px 12px 0;
+  border: 1px solid;
+  padding: 8px 16px;
+}
+.packing-label {
+  background: #fff;
+  color: #121212;
+  border: 1px dashed #121212;
+  max-width: 360px;
+  padding: 20px;
+  margin: auto;
+  overflow-wrap: anywhere;
+}
+.packing-label h1 {
+  font-size: 24px;
+}
+.packing-label h2 {
+  font-size: 20px;
+}
+.label-quantity {
+  font-size: 28px;
+  font-weight: 800;
+}
+.packing-label img {
+  max-width: 100%;
+  height: auto;
+}
+.print-a4 .packing-label {
+  max-width: 720px;
+}
+@media print {
+  @page deipo-label {
+    size: auto;
+    margin: 4mm;
+  }
+  @page deipo-a4 {
+    size: A4;
+    margin: 12mm;
+  }
+  .print-thermal {
+    page: deipo-label;
+  }
+  .print-a4 {
+    page: deipo-a4;
+  }
+  body,
+  .print-workspace {
+    color: #000 !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .print-controls,
+  body > header,
+  .ops-header,
+  .site-footer {
+    display: none !important;
+  }
+  .packing-label {
+    border: 0;
+    width: 100%;
+    max-width: 72mm;
+    margin: 0;
+    padding: 0;
+    break-inside: avoid;
+  }
+  .print-a4 .packing-label {
+    max-width: 190mm;
+  }
+  .packing-label img {
+    print-color-adjust: exact;
+  }
+}

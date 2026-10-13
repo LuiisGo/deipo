@@ -581,3 +581,19 @@ input::placeholder { color: #777069; opacity: 1; }
 .payment-status h1 { font-size: clamp(36px, 7vw, 72px); max-width: 900px; overflow-wrap: anywhere; }
 .payment-status p { max-width: 620px; }
 .receipt-status small { color: var(--cream); font: inherit; }
+
+/* Sprint04C: existing palette, compact purchase additions and customer journey. */
+.button-whatsapp { background: transparent; border: 1px solid currentColor; color: inherit; margin-top: .75rem; }
+.pin-picker { border: 1px solid currentColor; padding: 1rem; margin: 1rem 0; }
+.pin-picker button { margin: .5rem 0; min-height: 48px; }
+.customer-progress { list-style: none; padding: 0; margin: 2rem 0; }
+.customer-progress li { padding: 1rem; border-left: 2px solid #999; color: #64605a; letter-spacing: .08em; }
+.customer-progress li[data-complete=true] { border-color: var(--orange, #D3401F); color: #121212; }
+.customer-progress li[aria-current=step] { font-weight: 800; }
+.customer-tracker-access { text-align: center; margin: 1.5rem 0; }
+.customer-tracker-access img { display: block; margin: 1rem auto; max-width: 100%; height: auto; }
+.customer-tracker { padding-top: 3rem; padding-bottom: 3rem; }
+.commerce-table { overflow-x: auto; }
+.sales-desk fieldset { display: grid; gap: 1rem; border: 0; padding: 0; }
+.sales-desk input, .sales-desk select, .sales-desk textarea { width: 100%; min-height: 48px; }
+.sales-desk section { margin: 1.5rem 0; }

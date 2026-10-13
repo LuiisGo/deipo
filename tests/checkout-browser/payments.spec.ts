@@ -7,7 +7,7 @@ test.beforeEach(async ({ request }) => {
 async function pending(page: Page) {
   await page.goto('/');
   await page
-    .getByRole('button', { name: 'RESERVAR DROP', exact: true })
+    .getByRole('button', { name: 'COMPRAR ONLINE', exact: true })
     .click();
   await page.getByLabel('Nombre', { exact: true }).fill('Payment fixture');
   await page.getByLabel('Teléfono con código de país').fill('+50255551234');
@@ -141,7 +141,7 @@ test('bank transfer pending then verified fixture success, mobile receipt and ke
   });
   await page.goto('http://127.0.0.1:3002/success');
   await expect(
-    page.getByRole('heading', { name: 'Transferencia pendiente.' }),
+    page.getByRole('heading', { name: 'TRANSFERENCIA EN PROCESO' }),
   ).toBeVisible();
   expect(
     await page.evaluate(

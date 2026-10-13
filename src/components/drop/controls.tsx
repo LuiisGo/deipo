@@ -1,4 +1,5 @@
 'use client';
+import {salesWhatsApp,paymentMethodCopy} from '@/lib/commerce/messages';
 import { ArrowIcon } from '@/components/ui/arrow-icon';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -87,9 +88,10 @@ export function Extras({ drop }: { drop: Drop }) {
 }
 export function PurchaseControls() {
   const { drop, status } = useDrop();
+  const whatsapp=salesWhatsApp(process.env.NEXT_PUBLIC_SALES_WHATSAPP_NUMBER,drop.source==='production'?Number(drop.number):undefined);
   if (status==='temporarily_unavailable') return <p role="status" className="body-copy">Actualmente reservado. Algunas unidades podrían volver a estar disponibles pronto.</p>;
   if (!isPurchasable(status)) return null;
   if (drop.source==='admin-preview'||(drop.source==='production'&&!drop.onlineOrderingEnabled)) return <p className="caption purchase-note">Pedidos online todavía no habilitados.</p>;
   if (quantityLimit(drop) === 0) return <p className="caption">No hay unidades disponibles en este momento.</p>;
-  return <><div className="quantity-row"><span className="eyebrow">CANTIDAD</span><QuantityControl drop={drop} /></div>{drop.extras.length > 0 && <Extras drop={drop} />}{drop.source==='production'?<ReserveButton drop={drop} />:<DropCTA />}<PreviewOnly><p className="caption purchase-note">Checkout de prueba. Sin cobro. Sin reserva.</p></PreviewOnly></>;
+  return <><div className="quantity-row"><span className="eyebrow">CANTIDAD</span><QuantityControl drop={drop} /></div>{drop.extras.length > 0 && <Extras drop={drop} />}{drop.source==='production'?<ReserveButton drop={drop} />:<DropCTA />} {whatsapp&&<a className="button button-whatsapp" href={whatsapp} target="_blank" rel="noreferrer">PEDIR POR WHATSAPP</a>}<p className="caption purchase-note">{paymentMethodCopy.methods}</p><PreviewOnly><p className="caption purchase-note">Checkout de prueba. Sin cobro. Sin reserva.</p></PreviewOnly></>;
 }

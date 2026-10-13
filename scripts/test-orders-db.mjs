@@ -54,10 +54,10 @@ try{
  await c.query(`insert into public.drop_delivery_zones(id,drop_id,code,label) values($1,$2,'test','Test zone')`,[zone,d2]);
  await hold(c,d2,2,hs);
  await failure(c,'select public.create_pending_order_from_hold($1,$2)',[hs,details],/INVALID_SLOT/);
- await failure(c,'select public.create_pending_order_from_hold($1,$2)',[hs,{...details,method:'delivery',slot_id:slot,zone_id:randomUUID(),address:'Test'}],/INVALID_DELIVERY_ZONE/);
- await failure(c,'select public.create_pending_order_from_hold($1,$2)',[hs,{...details,method:'delivery',slot_id:slot,zone_id:zone,address:'Test'}],/FEE_NOT_CONFIGURED/);
+ await failure(c,'select public.create_pending_order_from_hold($1,$2)',[hs,{...details,method:'delivery',delivery_latitude:14.6,delivery_longitude:-90.5,slot_id:slot,zone_id:randomUUID(),address:'Test'}],/INVALID_DELIVERY_ZONE/);
+ await failure(c,'select public.create_pending_order_from_hold($1,$2)',[hs,{...details,method:'delivery',delivery_latitude:14.6,delivery_longitude:-90.5,slot_id:slot,zone_id:zone,address:'Test'}],/FEE_NOT_CONFIGURED/);
  await c.query('update public.drop_delivery_zones set fee_minor=2500 where id=$1',[zone]);
- const od=await order(c,hs,{...details,method:'delivery',slot_id:slot,zone_id:zone,address:'Test'});ok(od.order.total_minor,37500);
+ const od=await order(c,hs,{...details,method:'delivery',delivery_latitude:14.6,delivery_longitude:-90.5,slot_id:slot,zone_id:zone,address:'Test'});ok(od.order.total_minor,37500);
  await c.query(`update public.drops set name='Changed',price_minor=20000,pickup_label='Changed' where id=$1`,[d2]);ok((await state(c,hs)).drop.name,'SQL fixture');ok((await state(c,hs)).order.total_minor,37500);
  const oid=(await c.query('select id from public.orders where order_code=$1',[od.order.code])).rows[0].id;
  await failure(c,'select public.admin_cancel_pending_order($1,$2)',[oid,'Test'],/NOT_AUTHORIZED/);

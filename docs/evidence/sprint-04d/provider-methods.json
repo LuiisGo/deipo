@@ -1,0 +1,33 @@
+[
+  {
+    "mode": "CARD_ONLY",
+    "at": "2026-10-08T20:33:58.160Z",
+    "result": "PROVIDER-CONFIRMED creation and response contract",
+    "http": 201,
+    "methods": [
+      "card"
+    ],
+    "memo_present": false,
+    "live_mode": false,
+    "memo_matches": true,
+    "checkout_sha256": "5f18d4f09a10a35d0c6dc19ef34db4aa691396b4ec2e3724df1e37fd39452c91",
+    "checkout_sandbox_id_returned": false,
+    "sandbox_identity_verified_by_test_endpoint": true
+  },
+  {
+    "mode": "CARD_AND_BANK_TRANSFER",
+    "at": "2026-10-08T20:33:58.877Z",
+    "result": "PROVIDER-CONFIRMED creation and response contract",
+    "http": 201,
+    "methods": [
+      "card",
+      "bank_transfer"
+    ],
+    "memo_present": true,
+    "live_mode": false,
+    "memo_matches": true,
+    "checkout_sha256": "13ee1e47a1a7deba6d16ce3a30691d7afaf818991c2a0247f3833ea4e173cf2d",
+    "checkout_sandbox_id_returned": false,
+    "sandbox_identity_verified_by_test_endpoint": true
+  }
+]

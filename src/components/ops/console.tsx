@@ -78,7 +78,7 @@ export function OpsConsole({
       if (reload) await refresh();
       setMessage(
         body.action === "sync"
-          ? `${d.result.scanned} pagados revisados · ${d.result.provisioned} incorporados · ${d.result.already_present} existentes.`
+          ? `${d.result.scanned} pagados revisados · ${d.result.provisioned} incorporados · ${d.result.already_present} ya en operación.`
           : success,
       );
       return d.result;
@@ -154,7 +154,7 @@ export function OpsConsole({
           <button className="secondary">SALIR</button>
         </form>
       </header>
-      <main id="main" className="ops-main">
+      <main id="main" className={`ops-main${fulfillment ? " ops-fulfillment" : ""}`}>
         <div className="ops-heading">
           <div>
             <p className="eyebrow">DROP CONTROL</p>
@@ -181,10 +181,11 @@ export function OpsConsole({
             )}
           </nav>
         )}
-        <label>
+        <label className="ops-drop-select">
           Drop
           <select
             aria-label="Drop"
+            title={state.drops.find((d) => d.id === state.dropId)?.name}
             disabled={busy}
             value={state.dropId ?? ""}
             onChange={(e) => {
@@ -214,17 +215,36 @@ export function OpsConsole({
             SINCRONIZAR PEDIDOS PAGADOS
           </button>
         )}
-        {message && (
-          <p role="status" className="ops-message">
-            {message}
-          </p>
-        )}
-        {error && (
-          <p role="alert" className="ops-message error">
-            {error}
-          </p>
-        )}
-        <div className="ops-summary">
+        {message && (fulfillment ? (
+          <div role="status" className="ops-message">
+            <span className="ops-message-label">Resultado de la operación</span>
+            <p>{message}</p>
+          </div>
+        ) : <p role="status" className="ops-message">{message}</p>)}
+        {error && (fulfillment ? (
+          <div role="alert" className="ops-message error">
+            <span className="ops-message-label">No se pudo completar</span>
+            <p>{error}</p>
+          </div>
+        ) : <p role="alert" className="ops-message error">{error}</p>)}
+        {fulfillment ? (
+          <dl className="ops-kpis" aria-label="Resumen operativo">
+            <div>
+              <dt>Unidades activas</dt>
+              <dd>{state.queue
+                .filter((o) => !["completed", "cancelled"].includes(o.status))
+                .reduce((n, o) => n + o.quantity, 0)}</dd>
+            </div>
+            <div>
+              <dt>Pedidos</dt>
+              <dd>{state.queue.length}</dd>
+            </div>
+            <div>
+              <dt>Incidencias abiertas</dt>
+              <dd>{state.queue.reduce((n, o) => n + o.open_issues, 0)}</dd>
+            </div>
+          </dl>
+        ) : <div className="ops-summary">
           <strong>
             {state.queue
               .filter((o) => !["completed", "cancelled"].includes(o.status))
@@ -236,7 +256,7 @@ export function OpsConsole({
             {state.queue.reduce((n, o) => n + o.open_issues, 0)} incidencias
             abiertas
           </span>
-        </div>
+        </div>}
         {kitchen && state.dropId && (
           <section className="ops-waves">
             <h2>Tandas</h2>

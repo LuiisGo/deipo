@@ -274,6 +274,125 @@
 .ops-sync {
   margin-top: 8px;
 }
+/* Packing / Ready: presentation only; shared Kitchen and Driver layouts stay intact. */
+.ops-fulfillment .ops-heading {
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.ops-fulfillment .ops-heading > div {
+  min-width: 0;
+}
+.ops-fulfillment .ops-heading .eyebrow {
+  margin: 0 0 12px;
+}
+.ops-fulfillment h1 {
+  max-width: 13ch;
+  margin: 0;
+  font-size: clamp(36px, 4.6vw, 60px);
+  line-height: 1.08;
+}
+.ops-fulfillment .ops-links {
+  gap: 8px 24px;
+  margin: 0 0 28px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #b8b3ab;
+  font-size: 13px;
+}
+.ops-fulfillment .ops-drop-select {
+  margin: 0;
+  gap: 10px;
+}
+.ops-fulfillment .ops-drop-select select {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 36px;
+  background-color: transparent;
+  border-color: #8d887f;
+  font-weight: 600;
+}
+.ops-fulfillment .ops-sync {
+  margin-top: 16px;
+  min-height: 52px;
+  line-height: 1.5;
+}
+.ops-fulfillment .ops-message {
+  margin: 16px 0 0;
+  padding: 16px 20px;
+  border-left: 3px solid #d3401f;
+  background: #eae4d9;
+  overflow-wrap: anywhere;
+}
+.ops-fulfillment .ops-message-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.ops-fulfillment .ops-message p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.ops-fulfillment .ops-message.error {
+  background: #fff;
+  border: 1px solid #d3401f;
+  border-left-width: 3px;
+}
+.ops-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 32px 0;
+  padding: 24px 0;
+  border-top: 2px solid #121212;
+  border-bottom: 1px solid #b8b3ab;
+}
+.ops-kpis > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 24px;
+  border-left: 1px solid #b8b3ab;
+}
+.ops-kpis > div:first-child {
+  border: 0;
+  padding-left: 0;
+}
+.ops-kpis > div:last-child {
+  padding-right: 0;
+}
+.ops-kpis dt {
+  order: 1;
+  max-width: 16ch;
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ops-kpis dd {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.ops-fulfillment .ops-filters {
+  margin: 32px 0 24px;
+}
+.ops-fulfillment .ops-filters label {
+  margin-bottom: 0;
+}
+.ops-fulfillment .ops-filters select {
+  text-overflow: ellipsis;
+}
 @media (max-width: 1000px) {
   .ops-orders,
   .ops-wave-grid {
@@ -284,6 +403,30 @@
   }
 }
 @media (max-width: 600px) {
+  .ops-fulfillment .ops-heading {
+    margin-bottom: 28px;
+  }
+  .ops-fulfillment .ops-heading > button {
+    margin-top: 24px;
+  }
+  .ops-fulfillment .ops-links {
+    gap: 4px 20px;
+    margin-bottom: 24px;
+  }
+  .ops-kpis {
+    margin: 28px 0;
+    padding: 22px 0;
+  }
+  .ops-kpis > div {
+    padding: 0 12px;
+  }
+  .ops-kpis dt {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+  .ops-fulfillment .ops-filters {
+    gap: 18px 12px;
+  }
   .ops-header {
     padding: 16px;
     gap: 8px;

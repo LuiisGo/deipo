@@ -1,0 +1,74 @@
+{
+  "at": "2026-10-11T04:22:00.879247+00:00",
+  "checkpoint": "f03a10de708e4e32e8ba8ee44675fbb0fede7956",
+  "acceptance_project": "zyixizuutoyccouuijjz",
+  "site_url": "https://deploy-preview-5--deipo.netlify.app",
+  "redirect_urls": [
+    "https://deploy-preview-5--deipo.netlify.app/ops/accept"
+  ],
+  "custom_smtp_enabled": true,
+  "smtp_delivery": "NOT TESTED",
+  "signup_initially_enabled": true,
+  "signup_disabled_saved_and_reloaded": true,
+  "auth_users": 0,
+  "admin_profiles": 0,
+  "operator_profiles": 0,
+  "handoff": "Preview5 /admin/login prepared; founder must sign in using privately entered password.",
+  "staff_invites": "NOT RUN",
+  "card_e2e": "NOT RUN",
+  "tracker_qr": "NOT RUN",
+  "whatsapp": "PENDING BUSINESS NUMBER",
+  "production": {
+    "orders": 0,
+    "migrations": 19,
+    "drop_fingerprint": "056d3ea1d4fc18e228759510e1f67d9d",
+    "published_deploy": "6abddcecea4c8a000840c3cb",
+    "mutations": false
+  },
+  "pr5": {
+    "draft": true,
+    "merged": false,
+    "state": "open"
+  },
+  "founder_auth_created": true,
+  "founder_email_confirmed": true,
+  "founder_profile": "Founder explicitly authorized; scoped INSERT returned role=founder,is_active=true",
+  "staff_followup": {
+    "at": "2026-10-11T04:28:13.010094+00:00",
+    "founder_login": "PASS: real Preview Admin and staff route",
+    "kitchen": "Created through application; active; invitation pending; Auth invited_at present; no sign-in yet",
+    "auth_count": 2,
+    "operator_count": 1,
+    "email_delivery": "PENDING HUMAN MAILBOX CONFIRMATION",
+    "fulfillment": "Submission rejected by automatic approval review; no Auth user exists",
+    "driver": "NOT SENT; no Auth user exists",
+    "next": "Confirm controlled Fulfillment/Driver recipients and human Kitchen mailbox/accept/password flow"
+  },
+  "replacement_staff": {
+    "at": "2026-10-11T04:38:20.592976+00:00",
+    "identities": "Founder supplied three replacement controlled Gmail recipients; addresses kept in private vault only",
+    "kitchen": {
+      "active": true,
+      "invited": true,
+      "signed_in": false,
+      "creation": "Already existed on resumption; display name corrected through app"
+    },
+    "fulfillment": {
+      "active": true,
+      "invited": true,
+      "signed_in": true,
+      "creation": "Invitation submitted through application this turn"
+    },
+    "driver": {
+      "active": true,
+      "invited": true,
+      "signed_in": false,
+      "creation": "Invitation submitted through application this turn"
+    },
+    "superseded_kitchen": {
+      "active": false,
+      "history_preserved": true
+    },
+    "email_delivery": "Requires human confirmation; Auth last_sign_in alone does not establish password setup or correct role redirect"
+  }
+}

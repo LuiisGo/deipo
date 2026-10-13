@@ -1,0 +1,212 @@
+{
+  "date": "2026-10-12",
+  "base": "f03a10de708e4e32e8ba8ee44675fbb0fede7956",
+  "branch": "feat/deipo-os-sprint-04-operations",
+  "node_default": "20.20.2 (not used for reproductions)",
+  "node_executed": "22.22.1",
+  "postgres": "17.6",
+  "root_cause": "Persistent disposable SQL fixture reused between suite invocations; /reset only resets HTTP in-memory state. Prior successful Packing and Driver tests completed two 2-unit orders.",
+  "polish_caused_failure": false,
+  "classification": {
+    "A_visual_polish": false,
+    "B_dirty_fixture": true,
+    "C_test_order": "Cross-run state dependency; standard ordering passes on fresh baseline/current",
+    "D_runtime": "Not the original cause; all A/B runs Node22.22.1/PostgreSQL17.6. Missing local pgcrypto extension files restored from matching npm package before empty-DB reproduction; migrations untouched.",
+    "E_preexisting": "Pre-existing harness isolation weakness, not a fresh baseline product failure",
+    "F_product_regression": false
+  },
+  "comparison": [
+    {
+      "test": "fresh Ops login and inactive account fail closed",
+      "baseline_fresh": "PASS",
+      "current_fresh": "PASS",
+      "current_consumed": "PASS",
+      "fixed_run1": "PASS",
+      "fixed_run2": "PASS"
+    },
+    {
+      "test": "Kitchen mobile: 80-unit queue, PII whitelist, filters and no horizontal overflow",
+      "baseline_fresh": "PASS",
+      "current_fresh": "PASS",
+      "current_consumed": "FAIL",
+      "fixed_run1": "PASS",
+      "fixed_run2": "PASS"
+    },
+    {
+      "test": "Kitchen bulk selection assigns and preps two queued orders in two requests",
+      "baseline_fresh": "PASS",
+      "current_fresh": "PASS",
+      "current_consumed": "FAIL",
+      "fixed_run1": "PASS",
+      "fixed_run2": "PASS"
+    },
+    {
+      "test": "Packing mobile: checklist and seal required; manual code handoff completes pickup",
+      "baseline_fresh": "PASS",
+      "current_fresh": "PASS",
+      "current_consumed": "PASS",
+      "fixed_run1": "PASS",
+      "fixed_run2": "PASS"
+    },
+    {
+      "test": "Driver: assigned delivery only, issue handling and valid delivery lifecycle",
+      "baseline_fresh": "PASS",
+      "current_fresh": "PASS",
+      "current_consumed": "FAIL",
+      "fixed_run1": "PASS",
+      "fixed_run2": "PASS"
+    },
+    {
+      "test": "Founder desktop staff, explicit sync; invite configuration fails closed",
+      "baseline_fresh": "PASS",
+      "current_fresh": "PASS",
+      "current_consumed": "PASS",
+      "fixed_run1": "PASS",
+      "fixed_run2": "PASS"
+    }
+  ],
+  "original_http400": [
+    {
+      "test": "operations-04b-04B-real-Po-7afc2-eued-orders-in-two-requests",
+      "endpoint": "POST /api/ops",
+      "payload": {
+        "action": "transition",
+        "id": "<synthetic-fulfillment-id>",
+        "version": 9,
+        "to": "queued",
+        "override": true,
+        "reason": "Local UI bulk verification"
+      },
+      "response": {
+        "error": "No se pudo guardar. Revisá el estado, los datos y tus permisos; actualizá antes de reintentar."
+      },
+      "immediately_before": [],
+      "actor_role": "founder",
+      "stale_version": false
+    },
+    {
+      "test": "operations-04b-04B-real-Po-7fb22-nd-valid-delivery-lifecycle",
+      "endpoint": "POST /api/ops",
+      "payload": {
+        "action": "check",
+        "id": "<synthetic-fulfillment-id>",
+        "version": 8,
+        "component": "bag",
+        "quantity": 2
+      },
+      "response": {
+        "error": "No se pudo guardar. Revisá el estado, los datos y tus permisos; actualizá antes de reintentar."
+      },
+      "immediately_before": [],
+      "actor_role": "fulfillment",
+      "stale_version": false
+    }
+  ],
+  "controlled_reproduction_http400": [
+    {
+      "test": "Kitchen bulk selection assigns and preps two queued orders in two requests",
+      "endpoint": "POST /api/ops",
+      "payload": {
+        "action": "transition",
+        "id": "<synthetic-fulfillment-id>",
+        "version": 9,
+        "to": "queued",
+        "override": true,
+        "reason": "Local UI bulk verification"
+      },
+      "response": {
+        "error": "No se pudo guardar. Revisá el estado, los datos y tus permisos; actualizá antes de reintentar."
+      },
+      "immediately_before": [
+        {
+          "id": "<synthetic-fulfillment-id>",
+          "status": "completed",
+          "version": 9,
+          "wave_id": "<fixture-wave>",
+          "driver_user_id": null,
+          "order_status": "paid",
+          "fulfillment_method": "pickup",
+          "started_at": "2026-10-12T04:03:07.970Z",
+          "completed_at": null,
+          "driver_active": null
+        }
+      ],
+      "actor_role": "founder",
+      "stale_version": false
+    },
+    {
+      "test": "Driver: assigned delivery only, issue handling and valid delivery lifecycle",
+      "endpoint": "POST /api/ops",
+      "payload": {
+        "action": "check",
+        "id": "<synthetic-fulfillment-id>",
+        "version": 8,
+        "component": "bag",
+        "quantity": 2
+      },
+      "response": {
+        "error": "No se pudo guardar. Revisá el estado, los datos y tus permisos; actualizá antes de reintentar."
+      },
+      "immediately_before": [
+        {
+          "id": "<synthetic-fulfillment-id>",
+          "status": "completed",
+          "version": 8,
+          "wave_id": "<fixture-wave>",
+          "driver_user_id": "<assigned-active-driver>",
+          "order_status": "paid",
+          "fulfillment_method": "delivery",
+          "started_at": "2026-10-12T04:03:07.970Z",
+          "completed_at": null,
+          "driver_active": true
+        }
+      ],
+      "actor_role": "fulfillment",
+      "stale_version": false
+    }
+  ],
+  "sql_errors": [
+    {
+      "action": "transition",
+      "sqlstate": "P0001",
+      "error": "OPS_INVALID_TRANSITION",
+      "where": "PL/pgSQL function private.ops_transition(uuid,integer,text,text,boolean,boolean) line 11 at RAISE\nSQL function \"ops_transition\" statement 1"
+    },
+    {
+      "action": "check",
+      "sqlstate": "P0001",
+      "error": "OPS_INVALID_TRANSITION",
+      "where": "PL/pgSQL function private.ops_check_packing(uuid,text,integer) line 4 at RAISE\nSQL statement \"SELECT private.ops_check_packing(p_id,p_component,p_quantity)\"\nPL/pgSQL function private.ops_pack_check(uuid,integer,text,integer) line 6 at PERFORM\nSQL function \"ops_pack_check\" statement 1"
+    }
+  ],
+  "units": {
+    "fresh_queue_orders": 40,
+    "fresh_total_units": 80,
+    "fresh_active_units": 80,
+    "consumed_queue_orders": 40,
+    "consumed_total_units": 80,
+    "consumed_active_units": 76,
+    "reason": "2 completed orders x 2 units excluded by unchanged active-unit calculation",
+    "dom_fresh": "80 unidades activas",
+    "dom_consumed": "76 unidades activas",
+    "selector_role_drop_timing": "same Kitchen summary and 04B fixture; no selector, role projection, different drop or async defect"
+  },
+  "fix": "scripts/test-admin.mjs creates/migrates/seeds its own empty localhost DB for explicit operations-04b.spec.ts selection; drops only generated DB in finally; supplied DB preserved.",
+  "source_polish_preserved": true,
+  "migrations_001_027": "28 files byte-identical to base (historical005 split)",
+  "no_commit_push_deploy_or_remote_mutation": true,
+  "diagnostic_artifacts": "/private/tmp/deipo-diagnosis/",
+  "final_validation": {
+    "runner_invocation_1": "6/6 PASS",
+    "runner_invocation_2": "6/6 PASS",
+    "unit": "47/47 PASS",
+    "operations_unit": "19/19 PASS",
+    "fixture_sql_each_run": "158 checks / 7 races PASS",
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "production_build_node22": "PASS (both runner invocations)",
+    "git_diff_check": "PASS",
+    "input_database_fingerprint_unchanged": true,
+    "runner_scratch_databases_remaining": 0
+  }
+}

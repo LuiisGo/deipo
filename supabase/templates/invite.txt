@@ -1,0 +1,12 @@
+DEIPO OS / EQUIPO
+
+Tu acceso está listo.
+
+Fuiste invitado a DEIPO OS para operar el drop. Confirmá tu cuenta desde el enlace de abajo.
+
+Aceptar invitación:
+{{ .ConfirmationURL }}
+
+Si no esperabas este correo, podés ignorarlo.
+
+DEIPO OS / OPERACIÓN DEL DROP

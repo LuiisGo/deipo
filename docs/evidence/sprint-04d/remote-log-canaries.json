@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-09T12:59:39.809Z",
+  "origin": "https://deploy-preview-5--deipo.netlify.app",
+  "probes": [
+    {
+      "route": "/buy/<unused-synthetic-canary>",
+      "canary_sha256": "f399cfba121310115a6fec4256ec58ed8668f9de6479e838c769ab682aa1419e",
+      "status": 200,
+      "request_id": "01M4GBYWWD3MST1H3XNH1FAGWN",
+      "cache_control": "private, no-store",
+      "referrer_policy": "no-referrer",
+      "has_order_data": false,
+      "purpose": "Unissued synthetic canary; no valid order/access capability created"
+    },
+    {
+      "route": "/order/<unused-synthetic-canary>",
+      "canary_sha256": "ca9fb660c0a7703e24544b87a9135da55020be02b4dafd44e4f32ddf2919c917",
+      "status": 200,
+      "request_id": "01M4GBYXRC7CHKVRSECYNGPBYE",
+      "cache_control": "private,no-store",
+      "referrer_policy": "no-referrer",
+      "has_order_data": false,
+      "purpose": "Unissued synthetic canary; no valid order/access capability created"
+    }
+  ]
+}
